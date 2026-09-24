@@ -1,4 +1,5 @@
 #include "services/SistemaDeReservas.hpp"
+#include "models/Professor.hpp"
 
 bool SistemaDeReservas::verificarDisponibilidade(const Espaco& e, const Horario& h,
                                                    const std::string& data) {

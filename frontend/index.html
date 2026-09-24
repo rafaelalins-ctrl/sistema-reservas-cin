@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar | Reservas CIn</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="login-page">
+    <header class="topbar"><a class="brand" href="./"><span class="brand-mark">CIn</span><span>Reservas <strong>Centro de Informática</strong></span></a><div class="api-status" id="api-status" data-state="idle"><span class="status-dot"></span><span id="api-status-text">API não verificada</span></div></header>
+    <main class="login-shell">
+      <section class="login-copy"><p class="eyebrow">Sistema de reservas</p><h1>Seu espaço de trabalho começa aqui.</h1><p>Entre para consultar disponibilidade, reservar salas e acompanhar suas solicitações.</p></section>
+      <section class="auth-panel login-card" aria-labelledby="login-title">
+        <div class="auth-tabs"><button class="auth-tab active" data-auth-view="login-view" type="button">Entrar</button><button class="auth-tab" data-auth-view="signup-view" type="button">Criar conta</button></div>
+        <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+        <form id="login-form" class="compact-form auth-form"><h2 id="login-title">Acesse sua conta</h2><label>Email<input id="login-email" type="email" autocomplete="email" required /></label><label>Senha<input id="login-password" type="password" autocomplete="current-password" required /></label><button class="button button-dark" type="submit">Entrar no sistema</button></form>
+        <form id="signup-form" class="compact-form auth-form" hidden><h2>Nova conta</h2><label>Nome<input id="signup-name" autocomplete="name" required /></label><label>Email<input id="signup-email" type="email" autocomplete="email" required /></label><label>Senha<input id="signup-password" type="password" minlength="4" autocomplete="new-password" required /></label><label>Perfil<select id="signup-type"><option value="PROFESSOR">Professor</option><option value="ADMINISTRADOR">Administrador</option></select></label><label>Departamento<input id="signup-department" /></label><button class="button button-accent" type="submit">Criar conta</button></form>
+        <div class="api-config login-api"><label for="api-base">URL da API</label><input id="api-base" type="url" value="http://localhost:18080/api" /></div>
+      </section>
+    </main>
+    <script src="login.js" defer></script>
+  </body>
+</html>

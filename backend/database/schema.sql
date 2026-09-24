@@ -15,15 +15,18 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 CREATE TABLE IF NOT EXISTS espacos (
     id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo                  TEXT NOT NULL UNIQUE,
     identificacao           TEXT NOT NULL,
     capacidade              INTEGER NOT NULL,
     bloco                   TEXT NOT NULL,
+    andar                   TEXT NOT NULL DEFAULT 'Térreo',
+    detalhes                TEXT,
     mobilia                 TEXT NOT NULL,
     qtd_tomadas             INTEGER NOT NULL DEFAULT 0,
     acessivel_cadeirante    INTEGER NOT NULL DEFAULT 0, -- boolean 0/1
     requer_retirada_chave   INTEGER NOT NULL DEFAULT 0,
     em_manutencao           INTEGER NOT NULL DEFAULT 0,
-    tipo                    TEXT NOT NULL CHECK (tipo IN ('SALA_AULA', 'LABORATORIO', 'AUDITORIO')),
+    tipo                    TEXT NOT NULL CHECK (tipo IN ('SALA_AULA', 'LABORATORIO', 'AUDITORIO', 'SALA_REUNIAO')),
 
     -- Campos especificos de SalaAula
     tipo_quadro             TEXT,

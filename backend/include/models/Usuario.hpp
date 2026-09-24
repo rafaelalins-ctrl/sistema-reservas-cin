@@ -18,8 +18,6 @@ public:
     Usuario(int id, std::string nome, std::string email, std::string senhaHash);
     virtual ~Usuario() = default;
 
-    // Autentica comparando a senha informada com o hash armazenado.
-    // TODO: usar uma lib de hashing (ex: bcrypt/argon2) em vez de comparacao direta.
     bool fazerLogin(const std::string& emailInformado, const std::string& senha) const;
 
     // Cada tipo de usuario decide, a sua maneira, se pode reservar um espaco.
@@ -28,6 +26,7 @@ public:
     int getId() const { return id; }
     const std::string& getNome() const { return nome; }
     const std::string& getEmail() const { return email; }
+    const std::string& getSenhaHash() const { return senhaHash; }
 
     void setId(int novoId) { id = novoId; }
 };

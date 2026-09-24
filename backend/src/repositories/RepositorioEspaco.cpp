@@ -13,24 +13,27 @@
 
 void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
     const char* sql =
-        "INSERT INTO espacos (identificacao, capacidade, bloco, mobilia, qtd_tomadas, "
+        "INSERT INTO espacos (codigo, identificacao, capacidade, bloco, andar, detalhes, mobilia, qtd_tomadas, "
         "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         throw std::runtime_error(std::string("Erro ao preparar insert de espaco: ") + sqlite3_errmsg(db));
     }
 
-    sqlite3_bind_text(stmt, 1, obj->getIdentificacao().c_str(), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, obj->getCapacidade());
-    sqlite3_bind_text(stmt, 3, toString(obj->getBloco()), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 4, toString(obj->getMobilia()), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 5, obj->getQtdTomadas());
-    sqlite3_bind_int(stmt, 6, obj->isAcessivelCadeirante());
-    sqlite3_bind_int(stmt, 7, obj->isRequerRetiradaChave());
-    sqlite3_bind_int(stmt, 8, obj->isEmManutencao());
-    sqlite3_bind_text(stmt, 9, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 1, obj->getCodigo().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, obj->getIdentificacao().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, obj->getCapacidade());
+    sqlite3_bind_text(stmt, 4, toString(obj->getBloco()), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 5, obj->getAndar().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, obj->getDetalhes().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 7, toString(obj->getMobilia()), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 8, obj->getQtdTomadas());
+    sqlite3_bind_int(stmt, 9, obj->isAcessivelCadeirante());
+    sqlite3_bind_int(stmt, 10, obj->isRequerRetiradaChave());
+    sqlite3_bind_int(stmt, 11, obj->isEmManutencao());
+    sqlite3_bind_text(stmt, 12, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         sqlite3_finalize(stmt);
@@ -45,38 +48,53 @@ void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
 
 std::shared_ptr<Espaco> RepositorioEspaco::mapearLinha(sqlite3_stmt* stmt) const {
     int id = sqlite3_column_int(stmt, 0);
-    std::string identificacao = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-    int capacidade = sqlite3_column_int(stmt, 2);
-    BlocoCIn bloco = blocoFromString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)));
-    TipoMobilia mobilia = tipoMobiliaFromString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4)));
-    int qtdTomadas = sqlite3_column_int(stmt, 5);
-    bool acessivel = sqlite3_column_int(stmt, 6) != 0;
-    bool requerChave = sqlite3_column_int(stmt, 7) != 0;
-    bool manutencao = sqlite3_column_int(stmt, 8) != 0;
-    std::string tipo = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+    std::string codigo = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+    std::string identificacao = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+    int capacidade = sqlite3_column_int(stmt, 3);
+    BlocoCIn bloco = blocoFromString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4)));
+    std::string andar = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
+    std::string detalhes = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
+    TipoMobilia mobilia = tipoMobiliaFromString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7)));
+    int qtdTomadas = sqlite3_column_int(stmt, 8);
+    bool acessivel = sqlite3_column_int(stmt, 9) != 0;
+    bool requerChave = sqlite3_column_int(stmt, 10) != 0;
+    bool manutencao = sqlite3_column_int(stmt, 11) != 0;
+    std::string tipo = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
+
+    std::shared_ptr<Espaco> resultado;
 
     // TODO: ler colunas especificas de cada subtipo e repassar aos construtores abaixo.
     if (tipo == "SALA_AULA") {
-        return std::make_shared<SalaAula>(id, identificacao, capacidade, bloco, mobilia,
-                                           qtdTomadas, acessivel, requerChave, manutencao,
-                                           TipoQuadro::BRANCO, false);
+        resultado = std::make_shared<SalaAula>(id, identificacao, capacidade, bloco, mobilia,
+                               qtdTomadas, acessivel, requerChave, manutencao,
+                               TipoQuadro::BRANCO, false);
     }
     if (tipo == "LABORATORIO") {
-        return std::make_shared<Laboratorio>(id, identificacao, capacidade, bloco, mobilia,
-                                              qtdTomadas, acessivel, requerChave, manutencao,
-                                              0, std::vector<std::string>{});
+        resultado = std::make_shared<Laboratorio>(id, identificacao, capacidade, bloco, mobilia,
+                              qtdTomadas, acessivel, requerChave, manutencao,
+                              0, std::vector<std::string>{});
     }
     if (tipo == "AUDITORIO") {
-        return std::make_shared<Auditorio>(id, identificacao, capacidade, bloco, mobilia,
-                                            qtdTomadas, acessivel, requerChave, manutencao,
-                                            false, false);
+        resultado = std::make_shared<Auditorio>(id, identificacao, capacidade, bloco, mobilia,
+                                                qtdTomadas, acessivel, requerChave, manutencao,
+                                                false, false);
     }
-    throw std::runtime_error("Tipo de espaco desconhecido no banco: " + tipo);
+    if (tipo == "SALA_REUNIAO") {
+        resultado = std::make_shared<SalaAula>(id, identificacao, capacidade, bloco, mobilia,
+                                               qtdTomadas, acessivel, requerChave, manutencao,
+                                               TipoQuadro::BRANCO, false);
+    }
+    if (!resultado) throw std::runtime_error("Tipo de espaco desconhecido no banco: " + tipo);
+    resultado->setCodigo(codigo);
+    resultado->setTipoArmazenado(tipo);
+    resultado->setAndar(andar);
+    resultado->setDetalhes(detalhes);
+    return resultado;
 }
 
 std::shared_ptr<Espaco> RepositorioEspaco::buscar(int id) {
     const char* sql =
-        "SELECT id, identificacao, capacidade, bloco, mobilia, qtd_tomadas, "
+        "SELECT id, codigo, identificacao, capacidade, bloco, andar, detalhes, mobilia, qtd_tomadas, "
         "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo "
         "FROM espacos WHERE id = ?;";
 
@@ -138,7 +156,7 @@ void RepositorioEspaco::remover(int id) {
 
 std::vector<std::shared_ptr<Espaco>> RepositorioEspaco::listarTodos() {
     const char* sql =
-        "SELECT id, identificacao, capacidade, bloco, mobilia, qtd_tomadas, "
+        "SELECT id, codigo, identificacao, capacidade, bloco, andar, detalhes, mobilia, qtd_tomadas, "
         "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo FROM espacos;";
 
     sqlite3_stmt* stmt = nullptr;

@@ -4,6 +4,5 @@ Usuario::Usuario(int id, std::string nome, std::string email, std::string senhaH
     : id(id), nome(std::move(nome)), email(std::move(email)), senhaHash(std::move(senhaHash)) {}
 
 bool Usuario::fazerLogin(const std::string& emailInformado, const std::string& senha) const {
-    // TODO: comparar 'senha' com 'senhaHash' usando uma funcao de hash segura.
-    return emailInformado == email;
+    return emailInformado == email && senha == senhaHash;
 }
