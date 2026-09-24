@@ -1,0 +1,27 @@
+name: Build backend
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libsqlite3-dev
+
+      - name: Configurar
+        run: cmake -S backend -B backend/build
+
+      - name: Compilar
+        run: cmake --build backend/build -j
