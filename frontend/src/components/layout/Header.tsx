@@ -2,7 +2,10 @@ import { Link, NavLink } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 
-const links = [{ to: '/', label: 'Início' }]
+const links = [
+  { to: '/', label: 'Início' },
+  { to: '/style-guide', label: 'Guia visual' },
+]
 
 export function Header() {
   return (
