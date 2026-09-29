@@ -1,12 +1,10 @@
-# Frontend (React) - placeholder
+# Frontend — Sistema de Reservas CIn
 
-Este diretorio ainda nao tem o app React iniciado. Sugestao de bootstrap:
+React + Vite + TypeScript, com Tailwind CSS v4 e shadcn/ui.
 
 ```bash
-npm create vite@latest . -- --template react-ts
+cd frontend
 npm install
+cp .env.example .env.local
+npm run dev   # http://localhost:5173
 ```
-
-O frontend deve consumir a API REST exposta pelo backend Crow em
-`http://localhost:18080/api/...` (ver README.md na raiz do projeto para a
-lista de endpoints).
