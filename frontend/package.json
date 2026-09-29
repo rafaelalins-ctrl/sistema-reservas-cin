@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint && node scripts/generate-red-ramp.mjs --check",
+    "lint": "oxlint && node scripts/check-design.mjs && node scripts/generate-red-ramp.mjs --check",
+    "lint:design": "node scripts/check-design.mjs",
     "tokens": "node scripts/generate-red-ramp.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
