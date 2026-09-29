@@ -2,6 +2,12 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+/* Fontes (Fontsource). Inter: só os arquivos com eixo opsz. DM Serif Display: só 400 e 400 itálico. */
+@import '@fontsource-variable/inter/opsz.css';
+@import '@fontsource-variable/inter/opsz-italic.css';
+@import '@fontsource/dm-serif-display/400.css';
+@import '@fontsource/dm-serif-display/400-italic.css';
+
 @import './tokens/primitives.css';
 @import './tokens/aliases.css';
 
@@ -9,8 +15,35 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: system-ui, sans-serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
   --font-heading: var(--font-sans);
+  --font-display: 'DM Serif Display', Georgia, serif;
+
+  /* Escala tipográfica (docs/decisoes/004-escala-tipografica.md). */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.25;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 1;
+  --text-2xl: 2rem;
+  --text-2xl--line-height: 0.95;
+  --text-3xl: 3rem;
+  --text-3xl--line-height: 0.95;
+  --text-4xl: 4rem;
+  --text-4xl--line-height: 0.95;
+
+  /* Entrelinha e tracking do manual (seções 2.4 e 2.5). */
+  --leading-title: 0.95;
+  --leading-subtitle: 1;
+  --leading-body: 1.5;
+  --leading-note: 1.25;
+  --tracking-title: -0.05em;
+  --tracking-body: -0.02em;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -63,7 +96,66 @@
   }
 
   body {
+    font-family: var(--font-sans);
+    /* "Inter 18pt" do manual é o eixo óptico, não o tamanho. */
+    font-optical-sizing: none;
+    font-variation-settings: 'opsz' 18;
+    font-size: var(--text-base);
+    line-height: var(--leading-body);
+    letter-spacing: var(--tracking-body);
     background: var(--background);
     color: var(--foreground);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 700;
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    line-height: var(--leading-subtitle);
+  }
+
+  em,
+  i {
+    font-style: italic;
+  }
+
+  small {
+    line-height: var(--leading-note);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* DM Serif Display: só em manchetes e chamadas de destaque, em itálico, sem negrito. */
+  .display {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+    font-synthesis: none;
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
   }
 }
