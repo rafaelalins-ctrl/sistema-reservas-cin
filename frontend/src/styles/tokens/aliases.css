@@ -16,6 +16,8 @@
   /* Marca: vermelho institucional como acento. */
   --primary: var(--cin-red-600);
   --primary-foreground: var(--cin-offwhite);
+  /* Tom Escuro do manual (#B52834 ≈ --cin-red-700) para hover/pressed. */
+  --primary-hover: var(--cin-red-700);
 
   /* Neutros suaves. No shadcn, accent é superfície de hover, não cor de marca. */
   --secondary: var(--cin-gray-100);
