@@ -31,7 +31,7 @@ backend/
 ├── database/
 │   └── schema.sql         # DDL das tabelas
 └── CMakeLists.txt
-frontend/                    # Placeholder para o React (a implementar)
+frontend/                    # React + Vite + TS, Tailwind v4, shadcn/ui (ver frontend/README.md)
 ```
 
 ## Dependências
@@ -77,7 +77,7 @@ Esses handlers estão como **esqueleto** — a lógica de parsing de JSON e cham
 2. Implementar a reconstrução polimórfica de `Espaco` em `RepositorioEspaco`
    (coluna `tipo` na tabela `espacos` já está prevista no `schema.sql`).
 3. Implementar autenticação (hash de senha) em `Usuario::fazerLogin`.
-4. Criar o frontend em `frontend/` (React) consumindo os endpoints REST.
+4. Construir as telas do frontend (`frontend/`, base e identidade do CIn já prontas) consumindo os endpoints REST.
 5. Adicionar testes (ex: Catch2/GoogleTest) para `Horario::conflitaCom` e
    `SistemaDeReservas::verificarDisponibilidade`.
 

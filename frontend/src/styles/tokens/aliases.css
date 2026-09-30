@@ -1,0 +1,55 @@
+/*
+ * Aliases semânticos: mapeiam os primitivos do CIn para as variáveis do shadcn/ui.
+ * Componentes usam só estes nomes (via classes do Tailwind: bg-primary, text-muted-foreground...).
+ * Decisões que o manual não cobre estão em docs/decisoes/.
+ */
+
+:root {
+  /* Superfícies: tudo respira sobre o off-white; cards e popovers se separam por borda. */
+  --background: var(--cin-offwhite);
+  --foreground: var(--cin-gray-950);
+  --card: var(--cin-offwhite);
+  --card-foreground: var(--cin-gray-950);
+  --popover: var(--cin-offwhite);
+  --popover-foreground: var(--cin-gray-950);
+
+  /* Marca: vermelho institucional como acento. */
+  --primary: var(--cin-red-600);
+  --primary-foreground: var(--cin-offwhite);
+  /* Tom Escuro do manual (#B52834 ≈ --cin-red-700) para hover/pressed. */
+  --primary-hover: var(--cin-red-700);
+
+  /* Neutros suaves. No shadcn, accent é superfície de hover, não cor de marca. */
+  --secondary: var(--cin-gray-100);
+  --secondary-foreground: var(--cin-gray-800);
+  --muted: var(--cin-gray-100);
+  --muted-foreground: var(--cin-gray-600);
+  --accent: var(--cin-gray-100);
+  --accent-foreground: var(--cin-gray-800);
+
+  /* Erro: degrau escuro da rampa, sempre com ícone + texto (docs/decisoes/003-cores-de-estado.md). */
+  --destructive: var(--cin-red-800);
+
+  /* Bordas comuns suaves; controles de formulário com contraste 3:1 (WCAG 1.4.11). */
+  --border: var(--cin-gray-200);
+  --input: var(--cin-gray-400);
+  --ring: var(--cin-red-600);
+
+  --radius: 0.5rem;
+
+  /* Gráficos: somente a rampa institucional. */
+  --chart-1: var(--cin-red-600);
+  --chart-2: var(--cin-red-800);
+  --chart-3: var(--cin-red-400);
+  --chart-4: var(--cin-gray-600);
+  --chart-5: var(--cin-gray-400);
+
+  --sidebar: var(--cin-offwhite);
+  --sidebar-foreground: var(--cin-gray-950);
+  --sidebar-primary: var(--cin-red-600);
+  --sidebar-primary-foreground: var(--cin-offwhite);
+  --sidebar-accent: var(--cin-gray-100);
+  --sidebar-accent-foreground: var(--cin-gray-800);
+  --sidebar-border: var(--cin-gray-200);
+  --sidebar-ring: var(--cin-red-600);
+}
