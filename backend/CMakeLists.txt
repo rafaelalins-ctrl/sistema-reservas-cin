@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Dependencias
 # ---------------------------------------------
 find_package(SQLite3 REQUIRED)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(Threads REQUIRED)
 
 include(FetchContent)
@@ -37,8 +38,18 @@ target_include_directories(sistema_reservas PRIVATE
 target_link_libraries(sistema_reservas PRIVATE
     Crow::Crow
     SQLite::SQLite3
+    OpenSSL::Crypto
     Threads::Threads
 )
 
+if(WIN32)
+    target_link_libraries(sistema_reservas PRIVATE ws2_32 mswsock)
+endif()
+
 # Copia database/ (schema.sql) para perto do binario para facilitar o `run`.
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/database" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/database/cin_2026.db"
+    "${CMAKE_CURRENT_BINARY_DIR}/database/cin_2026.db"
+    COPYONLY
+)

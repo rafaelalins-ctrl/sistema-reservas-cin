@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 
 import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/lib/AuthProvider'
 import { router } from '@/router'
 import '@/styles/index.css'
 
@@ -13,8 +14,10 @@ const iconDefaults = { weight: 'fill', size: 16 } as const
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <IconContext.Provider value={iconDefaults}>
-      <RouterProvider router={router} />
-      <Toaster />
+      <AuthProvider>
+        <RouterProvider router={router} />
+        <Toaster />
+      </AuthProvider>
     </IconContext.Provider>
   </StrictMode>,
 )

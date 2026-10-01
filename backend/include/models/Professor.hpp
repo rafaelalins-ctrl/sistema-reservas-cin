@@ -1,5 +1,9 @@
 #pragma once
+#include <memory>
 #include "models/Usuario.hpp"
+
+class Reserva;
+class SistemaDeReservas;
 
 class Professor : public Usuario {
 private:
@@ -12,8 +16,8 @@ public:
 
     bool validarPermissaoReserva(const Espaco& e) const override;
 
-    void solicitarReserva();
-    void cancelarReserva();
+    bool solicitarReserva(SistemaDeReservas& sistema, std::shared_ptr<Reserva> reserva);
+    bool cancelarReserva(SistemaDeReservas& sistema, int idReserva);
 
     const std::string& getDepartamento() const { return departamento; }
 };

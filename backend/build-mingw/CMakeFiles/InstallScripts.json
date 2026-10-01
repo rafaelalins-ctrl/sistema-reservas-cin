@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/cmake_install.cmake",
+		"C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/_deps/crow-build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

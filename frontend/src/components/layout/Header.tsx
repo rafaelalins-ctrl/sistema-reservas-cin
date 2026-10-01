@@ -1,13 +1,27 @@
 import { Link, NavLink } from 'react-router-dom'
+import { SignOutIcon } from '@phosphor-icons/react'
 
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/lib/auth-context'
 import { cn } from '@/lib/utils'
 
 const links = [
   { to: '/', label: 'Início' },
-  { to: '/style-guide', label: 'Guia visual' },
 ]
 
 export function Header() {
+  const { sessao, sair } = useAuth()
+  const linksAtivos = sessao
+    ? [
+        ...links,
+        {
+          to:
+            sessao.usuario.tipo === 'ADMINISTRADOR' ? '/app/solicitacoes' : '/app/minhas-reservas',
+          label: 'Reservas',
+        },
+      ]
+    : links
+
   return (
     <header className="border-b border-border">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -20,7 +34,7 @@ export function Header() {
         </Link>
         <nav aria-label="Principal">
           <ul className="flex items-center gap-1">
-            {links.map(({ to, label }) => (
+            {linksAtivos.map(({ to, label }) => (
               <li key={to}>
                 <NavLink
                   to={to}
@@ -38,6 +52,16 @@ export function Header() {
             ))}
           </ul>
         </nav>
+        {sessao ? (
+          <Button variant="ghost" size="sm" onClick={sair}>
+            <SignOutIcon data-icon="inline-start" />
+            Sair
+          </Button>
+        ) : (
+          <Button asChild variant="outline" size="sm">
+            <Link to="/login">Entrar</Link>
+          </Button>
+        )}
       </div>
     </header>
   )
