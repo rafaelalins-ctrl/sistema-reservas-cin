@@ -6,8 +6,8 @@ import { DashboardIndex } from '@/components/layout/DashboardIndex'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { RequireAuth } from '@/components/layout/RequireAuth'
 import { RequireRole } from '@/components/layout/RequireRole'
-import { BuscarReservas } from '@/pages/BuscarReservas'
 import { Cadastro } from '@/pages/Cadastro'
+import { Disponibilidade } from '@/pages/Disponibilidade'
 import { ErroInesperado } from '@/pages/ErroInesperado'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
@@ -40,7 +40,7 @@ export const router = createBrowserRouter([
                   { index: true, element: <DashboardIndex /> },
                   { path: 'minhas-reservas', element: professor(<MinhasReservas />) },
                   { path: 'solicitacoes', element: admin(<Solicitacoes />) },
-                  { path: 'disponibilidade', element: <BuscarReservas /> },
+                  { path: 'disponibilidade', element: <Disponibilidade /> },
                   // Rota antiga da branch, mantida para links salvos.
                   {
                     path: 'buscar-reservas',
