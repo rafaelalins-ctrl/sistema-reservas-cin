@@ -51,6 +51,7 @@ export const router = createBrowserRouter([
                     ),
                   },
                   { path: 'buscar-reservas', element: <BuscarReservas /> },
+                  { path: 'disponibilidade', element: <BuscarReservas /> },
                   { path: 'espacos', element: <BuscarReservas /> },
                 ],
               },

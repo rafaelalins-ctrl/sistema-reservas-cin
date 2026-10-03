@@ -1,7 +1,7 @@
 // Regras puras de horários e reservas (docs/prd.md, seção 3.2). Usadas pelos formulários e pelo
 // simulado, para que os dois validem igual ao backend.
 import { DIAS, DIAS_SEMANA } from '@/lib/api/rotulos'
-import type { Conflito, DiaSemana, Horario, NovaReserva } from '@/lib/api/tipos'
+import type { Conflito, DiaSemana, Horario, NovaReserva, Reserva } from '@/lib/api/tipos'
 
 const MINUTOS_NO_DIA = 24 * 60
 
@@ -168,4 +168,9 @@ export function normalizarBusca(valor: string) {
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLocaleLowerCase('pt-BR')
+}
+
+/** P7: só reservas pendentes ou aprovadas que ainda não terminaram podem ser canceladas. */
+export function podeCancelar(reserva: Reserva, hoje = dataLocal()) {
+  return (reserva.status === 'PENDENTE' || reserva.status === 'APROVADA') && reserva.dataFim >= hoje
 }
