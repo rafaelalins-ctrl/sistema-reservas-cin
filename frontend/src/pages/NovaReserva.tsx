@@ -307,7 +307,7 @@ export function NovaReserva() {
         />
 
         {erroEnvio && (
-          <Alerta className="flex-col">
+          <Alerta>
             <span>{erroEnvio}</span>
             {conflitos.length > 0 && (
               <ul className="mt-1 list-disc pl-5">

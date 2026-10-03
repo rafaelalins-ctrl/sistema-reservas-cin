@@ -71,18 +71,19 @@ export function EstadoErro({
   )
 }
 
-/** Mensagem de erro curta (de uma ação ou de um formulário). */
+/** Mensagem de erro curta (de uma ação ou de um formulário). Aceita conteúdo em bloco. */
 export function Alerta({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p
+    <div
       role="alert"
       className={cn(
         'flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive',
         className,
       )}
     >
-      <WarningCircleIcon className="mt-0.5 shrink-0" /> {children}
-    </p>
+      <WarningCircleIcon className="mt-0.5 shrink-0" />
+      <div className="flex min-w-0 flex-col gap-1">{children}</div>
+    </div>
   )
 }
 
