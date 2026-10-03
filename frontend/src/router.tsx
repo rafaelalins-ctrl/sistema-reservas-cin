@@ -60,6 +60,20 @@ export const router = createBrowserRouter([
                     }),
                   },
                   {
+                    path: 'espacos/novo',
+                    lazy: async () => {
+                      const { FormularioEspaco } = await import('@/pages/espacos/FormularioEspaco')
+                      return { element: admin(<FormularioEspaco />) }
+                    },
+                  },
+                  {
+                    path: 'espacos/:id/editar',
+                    lazy: async () => {
+                      const { FormularioEspaco } = await import('@/pages/espacos/FormularioEspaco')
+                      return { element: admin(<FormularioEspaco />) }
+                    },
+                  },
+                  {
                     path: 'espacos/:id',
                     lazy: async () => ({
                       Component: (await import('@/pages/espacos/DetalheEspaco')).DetalheEspaco,

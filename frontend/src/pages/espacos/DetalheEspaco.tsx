@@ -1,7 +1,14 @@
-import { ArrowLeftIcon, BuildingsIcon, CalendarPlusIcon, WrenchIcon } from '@phosphor-icons/react'
+import {
+  ArrowLeftIcon,
+  BuildingsIcon,
+  CalendarPlusIcon,
+  PencilSimpleIcon,
+  WrenchIcon,
+} from '@phosphor-icons/react'
 import { useEffect } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
+import { BotaoManutencao, BotaoRemover } from '@/components/espacos/AcoesAdmin'
 import { AgendaEspaco } from '@/components/espacos/AgendaEspaco'
 import { AtributosComuns, AtributosPorTipo } from '@/components/espacos/AtributosEspaco'
 import { Indicadores } from '@/components/espacos/Indicadores'
@@ -15,8 +22,10 @@ export function DetalheEspaco() {
   const id = Number(useParams().id)
   const usuario = useUsuario()
   const { hash } = useLocation()
+  const navegar = useNavigate()
   const {
     dados: espaco,
+    setDados,
     carregando,
     erro,
     recarregar,
@@ -66,6 +75,18 @@ export function DetalheEspaco() {
             </h2>
             <Indicadores espaco={espaco} />
           </div>
+          {!professor && (
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link to={`/app/espacos/${espaco.id}/editar`}>
+                  <PencilSimpleIcon data-icon="inline-start" />
+                  Editar
+                </Link>
+              </Button>
+              <BotaoManutencao espaco={espaco} aoAlterar={setDados} />
+              <BotaoRemover espaco={espaco} aoRemover={() => navegar('/app/espacos')} />
+            </div>
+          )}
           {professor && (
             <div className="flex flex-col items-end gap-1">
               {espaco.emManutencao ? (

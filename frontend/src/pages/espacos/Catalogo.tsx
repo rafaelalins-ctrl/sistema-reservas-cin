@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom'
 
 import { Carregando, EstadoErro, EstadoVazio } from '@/components/estados/Estados'
+import { BotaoManutencao } from '@/components/espacos/AcoesAdmin'
 import { Indicadores } from '@/components/espacos/Indicadores'
 import { Campo } from '@/components/formulario/Campo'
 import { SelectSimples, TODOS } from '@/components/formulario/SelectSimples'
@@ -28,6 +29,7 @@ export function Catalogo() {
   const admin = usuario.tipo === 'ADMINISTRADOR'
   const {
     dados: espacos = [],
+    setDados,
     carregando,
     erro,
     recarregar,
@@ -201,6 +203,14 @@ export function Catalogo() {
                         Agenda
                       </Link>
                     </Button>
+                    {admin && (
+                      <BotaoManutencao
+                        espaco={espaco}
+                        aoAlterar={(atualizado) =>
+                          setDados(espacos.map((e) => (e.id === atualizado.id ? atualizado : e)))
+                        }
+                      />
+                    )}
                   </div>
                 </li>
               ))}
