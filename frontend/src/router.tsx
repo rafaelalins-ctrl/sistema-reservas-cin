@@ -41,6 +41,13 @@ export const router = createBrowserRouter([
                   { path: 'minhas-reservas', element: professor(<MinhasReservas />) },
                   { path: 'solicitacoes', element: admin(<Solicitacoes />) },
                   { path: 'disponibilidade', element: <Disponibilidade /> },
+                  {
+                    path: 'reservas/nova',
+                    lazy: async () => {
+                      const { NovaReserva } = await import('@/pages/NovaReserva')
+                      return { element: professor(<NovaReserva />) }
+                    },
+                  },
                   // Rota antiga da branch, mantida para links salvos.
                   {
                     path: 'buscar-reservas',
