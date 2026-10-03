@@ -238,7 +238,9 @@ export function BuscarReservas() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <h4 className="font-bold">{espaco.identificacao}</h4>
-                        <span className="text-xs text-muted-foreground">{nomeTipo(espaco.tipo)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {nomeTipo(espaco.tipo)}
+                        </span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">{espaco.descricao}</p>
                       <span className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">

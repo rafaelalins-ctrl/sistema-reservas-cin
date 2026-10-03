@@ -14,7 +14,10 @@ import { api, type CatalogoEspaco } from '@/lib/api'
 import { dataLocal } from '@/lib/reservas'
 
 function normalizarBusca(valor: string) {
-  return valor.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('pt-BR')
+  return valor
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase('pt-BR')
 }
 
 function formatarAndar(andar: number | null) {
@@ -36,7 +39,9 @@ export function CatalogoEspacos() {
   const [tipoSelecionado, setTipoSelecionado] = useState('')
   const [dataAgenda, setDataAgenda] = useState(dataLocal)
   const [espacoSelecionadoId, setEspacoSelecionadoId] = useState<number | null>(null)
-  const [agenda, setAgenda] = useState<Awaited<ReturnType<typeof api.buscarAgendaEspaco>> | null>(null)
+  const [agenda, setAgenda] = useState<Awaited<ReturnType<typeof api.buscarAgendaEspaco>> | null>(
+    null,
+  )
   const [carregando, setCarregando] = useState(true)
   const [carregandoAgenda, setCarregandoAgenda] = useState(false)
   const [erro, setErro] = useState('')
@@ -50,7 +55,8 @@ export function CatalogoEspacos() {
         if (ativo) setEspacos(resultado)
       })
       .catch((error: unknown) => {
-        if (ativo) setErro(error instanceof Error ? error.message : 'Não foi possível carregar os espaços.')
+        if (ativo)
+          setErro(error instanceof Error ? error.message : 'Não foi possível carregar os espaços.')
       })
       .finally(() => {
         if (ativo) setCarregando(false)
@@ -72,7 +78,10 @@ export function CatalogoEspacos() {
         if (ativo) setAgenda(resultado)
       })
       .catch((error: unknown) => {
-        if (ativo) setErroAgenda(error instanceof Error ? error.message : 'Não foi possível carregar a agenda.')
+        if (ativo)
+          setErroAgenda(
+            error instanceof Error ? error.message : 'Não foi possível carregar a agenda.',
+          )
       })
       .finally(() => {
         if (ativo) setCarregandoAgenda(false)
@@ -82,9 +91,11 @@ export function CatalogoEspacos() {
     }
   }, [dataAgenda, espacoSelecionadoId])
 
-  const blocos = Array.from(new Set(espacos.flatMap((espaco) => (espaco.bloco ? [espaco.bloco] : [])))).sort()
-  const tipos = Array.from(new Set(espacos.map((espaco) => espaco.tipo))).sort((primeiro, segundo) =>
-    primeiro.localeCompare(segundo, 'pt-BR'),
+  const blocos = Array.from(
+    new Set(espacos.flatMap((espaco) => (espaco.bloco ? [espaco.bloco] : []))),
+  ).sort()
+  const tipos = Array.from(new Set(espacos.map((espaco) => espaco.tipo))).sort(
+    (primeiro, segundo) => primeiro.localeCompare(segundo, 'pt-BR'),
   )
   const termo = normalizarBusca(busca.trim())
   const filtrados = espacos.filter((espaco) => {
@@ -173,7 +184,10 @@ export function CatalogoEspacos() {
       </div>
 
       {erro ? (
-        <p role="alert" className="flex items-start gap-2 border-y border-destructive/30 py-3 text-sm text-destructive">
+        <p
+          role="alert"
+          className="flex items-start gap-2 border-y border-destructive/30 py-3 text-sm text-destructive"
+        >
           <WarningCircleIcon className="mt-0.5 shrink-0" /> {erro}
         </p>
       ) : null}
@@ -192,11 +206,16 @@ export function CatalogoEspacos() {
       ) : erro ? null : filtrados.length ? (
         <ul className="divide-y divide-border">
           {filtrados.map((espaco) => (
-            <li key={espaco.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <li
+              key={espaco.id}
+              className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+            >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                   <h4 className="font-bold">{espaco.nome}</h4>
-                  {espaco.codigo ? <span className="font-mono text-xs text-muted-foreground">{espaco.codigo}</span> : null}
+                  {espaco.codigo ? (
+                    <span className="font-mono text-xs text-muted-foreground">{espaco.codigo}</span>
+                  ) : null}
                 </div>
                 {espaco.observacao ? (
                   <p className="mt-1 text-sm text-muted-foreground">{espaco.observacao}</p>
@@ -254,12 +273,17 @@ export function CatalogoEspacos() {
               </p>
             </div>
             {espacoSelecionado.codigo ? (
-              <span className="font-mono text-xs text-muted-foreground">{espacoSelecionado.codigo}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {espacoSelecionado.codigo}
+              </span>
             ) : null}
           </div>
 
           {erroAgenda ? (
-            <p role="alert" className="mt-4 flex items-start gap-2 border-y border-destructive/30 py-3 text-sm text-destructive">
+            <p
+              role="alert"
+              className="mt-4 flex items-start gap-2 border-y border-destructive/30 py-3 text-sm text-destructive"
+            >
               <WarningCircleIcon className="mt-0.5 shrink-0" /> {erroAgenda}
             </p>
           ) : carregandoAgenda ? (
@@ -269,7 +293,10 @@ export function CatalogoEspacos() {
           ) : agenda?.horarios.length ? (
             <ul className="mt-3 divide-y divide-border">
               {agenda.horarios.map((horario) => (
-                <li key={`${horario.idReserva}-${horario.inicioMin}`} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                <li
+                  key={`${horario.idReserva}-${horario.inicioMin}`}
+                  className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+                >
                   <span className="font-mono tabular-nums">
                     {formatarHorario(horario.inicioMin)}–{formatarHorario(horario.fimMin)}
                   </span>

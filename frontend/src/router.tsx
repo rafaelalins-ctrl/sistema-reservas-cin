@@ -50,6 +50,15 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      // Guia visual só em desenvolvimento: verificado pelo tsc, fora do build de produção.
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: '/style-guide',
+              lazy: async () => ({ Component: (await import('@/pages/StyleGuide')).StyleGuide }),
+            },
+          ]
+        : []),
       { path: '*', element: <NotFound /> },
     ],
   },

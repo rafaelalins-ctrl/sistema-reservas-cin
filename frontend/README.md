@@ -4,8 +4,8 @@ React + Vite + TypeScript, com **Tailwind CSS v4** e **shadcn/ui**, personalizad
 visual do CIn-UFPE. A fonte de verdade da identidade é
 [`docs/identidade-cin-ufpe.md`](docs/identidade-cin-ufpe.md).
 
-> Estado atual: projeto inicializado e com a identidade aplicada. As telas do sistema ainda não
-> existem. A página `/style-guide` é a referência para construí-las.
+> Estado atual: telas de login, cadastro e área `/app` por perfil. A página `/style-guide`
+> (disponível só em `npm run dev`) é a referência visual para construir as telas.
 
 ## Rodando
 
@@ -14,7 +14,7 @@ Requer Node 20.19+ (ou 22.12+).
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local   # URL da API do backend
+cp .env.example .env.local   # VITE_API_URL=/api; o Vite encaminha /api ao backend
 npm run dev                  # http://localhost:5173
 ```
 
