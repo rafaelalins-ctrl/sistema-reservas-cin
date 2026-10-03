@@ -1,19 +1,10 @@
 // Carga inicial do simulado. As datas são relativas a hoje, para a demonstração nunca envelhecer.
-// Contas de teste (só existem no simulado):
-//   ana.souza@cin.ufpe.br   / senha-teste-123  (professora)
-//   bruno.lima@cin.ufpe.br  / senha-teste-123  (professor)
-//   admin@cin.ufpe.br       / senha-teste-123  (administradora)
+// Contas de teste: ver contas.ts.
 import type { DiaSemana, Espaco, Horario, Reserva, Usuario } from '@/lib/api/tipos'
+import { SENHA_TESTE } from '@/lib/api/simulado/contas'
 import { dataLocal, diaDaSemana, somarDias } from '@/lib/reservas'
 
 export type UsuarioSimulado = Usuario & { senha: string }
-
-export const SENHA_TESTE = 'senha-teste-123'
-
-export const CONTAS_TESTE = [
-  { email: 'ana.souza@cin.ufpe.br', perfil: 'Professora' },
-  { email: 'admin@cin.ufpe.br', perfil: 'Administradora' },
-]
 
 function usuarios(): UsuarioSimulado[] {
   return [

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { ApiError } from '@/lib/api/erros'
 import { encerrarSessao, iniciarSessao } from '@/lib/api/sessao'
 import { apiSimulada as api, resetarSimulado } from '@/lib/api/simulado'
-import { SENHA_TESTE } from '@/lib/api/simulado/dados'
+import { SENHA_TESTE } from '@/lib/api/simulado/contas'
 import type { NovaReserva } from '@/lib/api/tipos'
 import { dataLocal, diaDaSemana, somarDias } from '@/lib/reservas'
 

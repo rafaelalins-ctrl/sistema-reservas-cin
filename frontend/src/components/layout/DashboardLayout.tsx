@@ -1,6 +1,7 @@
 import { BuildingsIcon, CalendarBlankIcon } from '@phosphor-icons/react'
 import { NavLink, Outlet } from 'react-router-dom'
 
+import { Sobrelinha } from '@/components/formulario/Campo'
 import { useAuth } from '@/lib/auth-context'
 import { cn } from '@/lib/utils'
 
@@ -20,9 +21,7 @@ export function DashboardLayout() {
   return (
     <div className="flex flex-col gap-7">
       <header className="flex flex-col gap-2 border-b border-border pb-5">
-        <p className="text-sm font-bold text-primary">
-          {isAdmin ? 'ÁREA DA ADMINISTRAÇÃO' : 'ÁREA DO PROFESSOR'}
-        </p>
+        <Sobrelinha>{isAdmin ? 'Área da administração' : 'Área do professor'}</Sobrelinha>
         <h1 className="text-2xl">Olá, {sessao?.usuario.nome}</h1>
       </header>
       <nav aria-label="Reservas" className="border-b border-border">
