@@ -1,6 +1,7 @@
 import {
   BuildingsIcon,
   CalendarBlankIcon,
+  ListBulletsIcon,
   MagnifyingGlassIcon,
   TrayIcon,
 } from '@phosphor-icons/react'
@@ -35,6 +36,7 @@ export function DashboardLayout() {
   const navegacao = isAdmin
     ? [
         { to: '/app/solicitacoes', label: 'Solicitações', Icon: TrayIcon },
+        { to: '/app/reservas', label: 'Todas as reservas', Icon: ListBulletsIcon },
         { to: '/app/espacos', label: 'Espaços', Icon: BuildingsIcon },
       ]
     : [

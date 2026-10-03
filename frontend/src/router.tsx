@@ -42,6 +42,13 @@ export const router = createBrowserRouter([
                   { path: 'solicitacoes', element: admin(<Solicitacoes />) },
                   { path: 'disponibilidade', element: <Disponibilidade /> },
                   {
+                    path: 'reservas',
+                    lazy: async () => {
+                      const { TodasReservas } = await import('@/pages/TodasReservas')
+                      return { element: admin(<TodasReservas />) }
+                    },
+                  },
+                  {
                     path: 'reservas/nova',
                     lazy: async () => {
                       const { NovaReserva } = await import('@/pages/NovaReserva')
