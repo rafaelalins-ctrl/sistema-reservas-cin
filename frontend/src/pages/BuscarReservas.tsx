@@ -6,67 +6,42 @@ import {
   MagnifyingGlassIcon,
   SpinnerIcon,
   UsersIcon,
-  WarningCircleIcon,
 } from '@phosphor-icons/react'
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 
+import { Alerta } from '@/components/estados/Estados'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { api, type Espaco } from '@/lib/api'
+import { api, DIAS, mensagemAmigavel, TIPOS_ESPACO, type Espaco } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
-import { dataLocal, DIAS, minutos, nomeTipo } from '@/lib/reservas'
-
-function mensagemErro(error: unknown) {
-  return error instanceof Error ? error.message : 'Não foi possível concluir a operação.'
-}
+import { dataLocal, diaDaSemana, minutos } from '@/lib/reservas'
 
 export function BuscarReservas() {
   const { sessao } = useAuth()
-  const [espacos, setEspacos] = useState<Espaco[]>([])
-  const [idsDisponiveis, setIdsDisponiveis] = useState<number[] | null>(null)
+  const [disponiveis, setDisponiveis] = useState<Espaco[] | null>(null)
   const [data, setData] = useState(dataLocal)
   const [inicio, setInicio] = useState('08:00')
   const [fim, setFim] = useState('09:00')
   const [capacidade, setCapacidade] = useState('1')
-  const [carregando, setCarregando] = useState(true)
   const [buscando, setBuscando] = useState(false)
   const [solicitandoId, setSolicitandoId] = useState<number | null>(null)
   const [erro, setErro] = useState('')
 
-  useEffect(() => {
-    let ativo = true
-    api
-      .listarEspacos()
-      .then((resultado) => {
-        if (ativo) setEspacos(resultado)
-      })
-      .catch((error: unknown) => {
-        if (ativo) setErro(mensagemErro(error))
-      })
-      .finally(() => {
-        if (ativo) setCarregando(false)
-      })
-    return () => {
-      ativo = false
-    }
-  }, [])
-
-  const dia = DIAS[new Date(`${data}T12:00:00`).getDay()]
-  const exibidos = idsDisponiveis
-    ? espacos.filter((espaco) => idsDisponiveis.includes(espaco.id))
-    : espacos.filter((espaco) => !espaco.emManutencao)
+  const dia = data ? diaDaSemana(data) : null
+  const carregando = false
+  const exibidos = disponiveis ?? []
 
   function invalidarBusca() {
-    setIdsDisponiveis(null)
+    setDisponiveis(null)
     setErro('')
   }
 
   async function buscar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!data || !inicio || !fim || minutos(inicio) >= minutos(fim)) {
-      setErro('Informe uma data e um intervalo de horário válido.')
+      setErro('O horário de início deve ser anterior ao de fim.')
       return
     }
     const capacidadeMinima = Number(capacidade)
@@ -78,41 +53,37 @@ export function BuscarReservas() {
     setBuscando(true)
     setErro('')
     try {
-      const filtros = new URLSearchParams({
-        dia: dia.api,
-        inicio: String(minutos(inicio)),
-        fim: String(minutos(fim)),
-        data,
-        capacidade: String(capacidadeMinima),
-      })
-      const resultado = await api.buscarDisponibilidade(filtros)
-      setIdsDisponiveis(resultado.map((espaco) => espaco.id))
+      setDisponiveis(
+        await api.espacos.disponiveis({
+          data,
+          inicioMin: minutos(inicio),
+          fimMin: minutos(fim),
+          capacidadeMin: capacidadeMinima,
+        }),
+      )
     } catch (error) {
-      setIdsDisponiveis([])
-      setErro(mensagemErro(error))
+      setDisponiveis([])
+      setErro(mensagemAmigavel(error))
     } finally {
       setBuscando(false)
     }
   }
 
   async function solicitar(espaco: Espaco) {
-    if (!sessao || !dia) return
+    if (!dia) return
     setSolicitandoId(espaco.id)
     setErro('')
     try {
-      const reserva = await api.solicitarReserva(
-        {
-          idEspaco: espaco.id,
-          dataInicio: data,
-          dataFim: data,
-          horarios: [{ dia: dia.api, inicioMin: minutos(inicio), fimMin: minutos(fim) }],
-        },
-        sessao.credenciais,
-      )
-      toast.success(`Solicitação ${reserva.id} enviada para aprovação.`)
-      setIdsDisponiveis((ids) => ids?.filter((id) => id !== espaco.id) ?? null)
+      await api.reservas.criar({
+        idEspaco: espaco.id,
+        dataInicio: data,
+        dataFim: data,
+        horarios: [{ dia, inicioMin: minutos(inicio), fimMin: minutos(fim) }],
+      })
+      toast.success(`Solicitação para ${espaco.identificacao} enviada para aprovação.`)
+      setDisponiveis((atuais) => atuais?.filter((e) => e.id !== espaco.id) ?? null)
     } catch (error) {
-      setErro(mensagemErro(error))
+      setErro(mensagemAmigavel(error))
     } finally {
       setSolicitandoId(null)
     }
@@ -194,7 +165,7 @@ export function BuscarReservas() {
           />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground lg:pb-2">
-          <CalendarBlankIcon size={18} /> {dia?.nome}
+          <CalendarBlankIcon size={18} /> {dia && DIAS[dia]}
         </div>
         <Button type="submit" size="lg" disabled={buscando} className="h-10 w-full lg:w-auto">
           {buscando ? <SpinnerIcon className="animate-spin" /> : <MagnifyingGlassIcon />}
@@ -202,16 +173,9 @@ export function BuscarReservas() {
         </Button>
       </form>
 
-      {erro && (
-        <p
-          role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-        >
-          <WarningCircleIcon className="mt-0.5 shrink-0" /> {erro}
-        </p>
-      )}
+      {erro && <Alerta>{erro}</Alerta>}
 
-      {idsDisponiveis !== null && (
+      {disponiveis !== null && (
         <>
           <div className="flex items-end justify-between gap-3">
             <h3 className="font-bold">Disponíveis neste horário</h3>
@@ -239,10 +203,9 @@ export function BuscarReservas() {
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <h4 className="font-bold">{espaco.identificacao}</h4>
                         <span className="text-xs text-muted-foreground">
-                          {nomeTipo(espaco.tipo)}
+                          {TIPOS_ESPACO[espaco.tipo]}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{espaco.descricao}</p>
                       <span className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <UsersIcon size={16} /> Até {espaco.capacidade} pessoas
                       </span>
@@ -252,11 +215,7 @@ export function BuscarReservas() {
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={
-                        !!espaco.emManutencao ||
-                        !idsDisponiveis.includes(espaco.id) ||
-                        solicitandoId !== null
-                      }
+                      disabled={solicitandoId !== null}
                       onClick={() => solicitar(espaco)}
                       className="w-full sm:w-auto"
                     >

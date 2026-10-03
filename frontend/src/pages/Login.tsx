@@ -5,8 +5,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { UsuarioAutenticado } from '@/lib/api'
+import { mensagemAmigavel } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 
 export function Login() {
@@ -14,7 +13,6 @@ export function Login() {
   const navegar = useNavigate()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
-  const [tipoConta, setTipoConta] = useState<UsuarioAutenticado['tipo']>('PROFESSOR')
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -25,10 +23,10 @@ export function Login() {
     setErro('')
     setEnviando(true)
     try {
-      await entrar({ email, senha }, tipoConta)
+      await entrar({ email, senha })
       navegar('/app', { replace: true })
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Não foi possível entrar.')
+      setErro(mensagemAmigavel(error, { 401: 'E-mail ou senha incorretos.' }))
     } finally {
       setEnviando(false)
     }
@@ -42,18 +40,6 @@ export function Login() {
         <p className="text-sm text-muted-foreground">Acesse sua área de reservas.</p>
       </header>
       <form onSubmit={enviar} className="flex flex-col gap-5 rounded-md border border-border p-5">
-        <div className="flex flex-col gap-2">
-          <Label>Tipo de acesso</Label>
-          <Tabs
-            value={tipoConta}
-            onValueChange={(valor) => setTipoConta(valor as UsuarioAutenticado['tipo'])}
-          >
-            <TabsList className="h-10 w-full">
-              <TabsTrigger value="PROFESSOR">Professor</TabsTrigger>
-              <TabsTrigger value="ADMINISTRADOR">Administrador</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="login-email">E-mail institucional</Label>
           <Input

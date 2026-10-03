@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { api } from '@/lib/api'
+import { api, mensagemAmigavel } from '@/lib/api'
 
 export function Cadastro() {
   const navegar = useNavigate()
@@ -27,11 +27,11 @@ export function Cadastro() {
     }
     setEnviando(true)
     try {
-      const resultado = await api.cadastrarProfessor({ nome, email, senha, departamento })
-      toast.success(resultado.mensagem)
+      await api.auth.cadastrar({ nome, email, senha, departamento })
+      toast.success('Conta criada. Entre com seu e-mail e senha.')
       navegar('/login', { replace: true })
     } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Não foi possível criar a conta.')
+      setErro(mensagemAmigavel(error))
     } finally {
       setEnviando(false)
     }
