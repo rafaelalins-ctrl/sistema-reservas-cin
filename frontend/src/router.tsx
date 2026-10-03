@@ -1,4 +1,5 @@
-import { createBrowserRouter } from 'react-router-dom'
+import type { ReactNode } from 'react'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { DashboardIndex } from '@/components/layout/DashboardIndex'
@@ -13,6 +14,9 @@ import { Login } from '@/pages/Login'
 import { MinhasReservas } from '@/pages/MinhasReservas'
 import { NotFound } from '@/pages/NotFound'
 import { Solicitacoes } from '@/pages/Solicitacoes'
+
+const professor = (pagina: ReactNode) => <RequireRole tipo="PROFESSOR">{pagina}</RequireRole>
+const admin = (pagina: ReactNode) => <RequireRole tipo="ADMINISTRADOR">{pagina}</RequireRole>
 
 export const router = createBrowserRouter([
   {
@@ -34,25 +38,26 @@ export const router = createBrowserRouter([
                 element: <DashboardLayout />,
                 children: [
                   { index: true, element: <DashboardIndex /> },
-                  {
-                    path: 'minhas-reservas',
-                    element: (
-                      <RequireRole tipo="PROFESSOR">
-                        <MinhasReservas />
-                      </RequireRole>
-                    ),
-                  },
-                  {
-                    path: 'solicitacoes',
-                    element: (
-                      <RequireRole tipo="ADMINISTRADOR">
-                        <Solicitacoes />
-                      </RequireRole>
-                    ),
-                  },
-                  { path: 'buscar-reservas', element: <BuscarReservas /> },
+                  { path: 'minhas-reservas', element: professor(<MinhasReservas />) },
+                  { path: 'solicitacoes', element: admin(<Solicitacoes />) },
                   { path: 'disponibilidade', element: <BuscarReservas /> },
-                  { path: 'espacos', element: <BuscarReservas /> },
+                  // Rota antiga da branch, mantida para links salvos.
+                  {
+                    path: 'buscar-reservas',
+                    element: <Navigate to="/app/disponibilidade" replace />,
+                  },
+                  {
+                    path: 'espacos',
+                    lazy: async () => ({
+                      Component: (await import('@/pages/espacos/Catalogo')).Catalogo,
+                    }),
+                  },
+                  {
+                    path: 'espacos/:id',
+                    lazy: async () => ({
+                      Component: (await import('@/pages/espacos/DetalheEspaco')).DetalheEspaco,
+                    }),
+                  },
                 ],
               },
             ],

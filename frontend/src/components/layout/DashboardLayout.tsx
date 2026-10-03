@@ -1,4 +1,9 @@
-import { BuildingsIcon, CalendarBlankIcon } from '@phosphor-icons/react'
+import {
+  BuildingsIcon,
+  CalendarBlankIcon,
+  MagnifyingGlassIcon,
+  TrayIcon,
+} from '@phosphor-icons/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -29,12 +34,13 @@ export function DashboardLayout() {
   )
   const navegacao = isAdmin
     ? [
-        { to: '/app/solicitacoes', label: 'Solicitações', Icon: CalendarBlankIcon },
-        { to: '/app/buscar-reservas', label: 'Espaços e agenda', Icon: BuildingsIcon },
+        { to: '/app/solicitacoes', label: 'Solicitações', Icon: TrayIcon },
+        { to: '/app/espacos', label: 'Espaços', Icon: BuildingsIcon },
       ]
     : [
         { to: '/app/minhas-reservas', label: 'Minhas reservas', Icon: CalendarBlankIcon },
-        { to: '/app/buscar-reservas', label: 'Espaços e agenda', Icon: BuildingsIcon },
+        { to: '/app/disponibilidade', label: 'Disponibilidade', Icon: MagnifyingGlassIcon },
+        { to: '/app/espacos', label: 'Espaços', Icon: BuildingsIcon },
       ]
 
   return (
