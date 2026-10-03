@@ -4,8 +4,10 @@ React + Vite + TypeScript, com **Tailwind CSS v4** e **shadcn/ui**, personalizad
 visual do CIn-UFPE. A fonte de verdade da identidade é
 [`docs/identidade-cin-ufpe.md`](docs/identidade-cin-ufpe.md).
 
-> Estado atual: telas de login, cadastro e área `/app` por perfil. A página `/style-guide`
-> (disponível só em `npm run dev`) é a referência visual para construir as telas.
+> Estado atual: todas as telas do MVP do [PRD](../docs/prd.md) prontas, funcionando com uma **API
+> simulada** no navegador até o backend ficar pronto. Para ligar ao backend, veja
+> [`docs/integracao-backend.md`](docs/integracao-backend.md). A página `/style-guide` (só em
+> `npm run dev`) é a referência visual.
 
 ## Rodando
 
@@ -15,38 +17,65 @@ Requer Node 20.19+ (ou 22.12+).
 cd frontend
 npm install
 cp .env.example .env.local   # VITE_API_URL=/api; o Vite encaminha /api ao backend
-npm run dev                  # http://localhost:5173
+npm run dev                  # http://localhost:5173 (API simulada)
 ```
+
+Em `npm run dev`, a API é simulada por padrão: os dados ficam no `sessionStorage` do navegador e a
+tela de login mostra as contas de teste e o botão "Restaurar dados de exemplo".
 
 | Script           | O que faz                                                                |
 | ---------------- | ------------------------------------------------------------------------ |
 | `npm run dev`    | servidor de desenvolvimento                                              |
 | `npm run build`  | typecheck + build de produção                                            |
+| `npm test`       | testes (Vitest) das regras de reserva e da API simulada                  |
 | `npm run lint`   | oxlint + `check-design` + confere se `primitives.css` está em dia        |
 | `npm run tokens` | regenera `src/styles/tokens/primitives.css` (rampa do vermelho e cinzas) |
 | `npm run format` | Prettier (ordena classes do Tailwind)                                    |
+
+## Telas
+
+| Rota                            | Perfil        | O que faz                                            |
+| ------------------------------- | ------------- | ---------------------------------------------------- |
+| `/`                             | todos         | página inicial                                       |
+| `/login`, `/cadastro`           | visitante     | entrar (perfil vem da API) e cadastro de professor   |
+| `/app/minhas-reservas`          | professor     | reservas com filtros e cancelamento                  |
+| `/app/disponibilidade`          | ambos         | espaços livres numa data/horário; professor solicita |
+| `/app/reservas/nova`            | professor     | reserva com período e horários semanais              |
+| `/app/espacos`                  | ambos         | catálogo com filtros na URL                          |
+| `/app/espacos/:id`              | ambos         | detalhe, atributos por tipo e agenda semanal         |
+| `/app/espacos/novo`, `…/editar` | administrador | cadastro e edição de espaço                          |
+| `/app/solicitacoes`             | administrador | fila de pendentes: aprovar e rejeitar                |
+| `/app/reservas`                 | administrador | todas as reservas, com filtros e paginação           |
 
 ## Estrutura
 
 ```
 frontend/
-  docs/                   identidade do CIn, errata e decisões de design
+  docs/                   identidade, decisões de design e integração com o backend
   scripts/
     generate-red-ramp.mjs gera os primitivos de cor (OKLCH, culori)
     check-design.mjs      guarda-corpos da identidade (roda no lint e no CI)
   src/
-    styles/
-      index.css           Tailwind, fontes, @theme inline e base tipográfica
-      tokens/
-        primitives.css    --cin-offwhite, --cin-red-*, --cin-gray-* (GERADO)
-        aliases.css       variáveis do shadcn (--primary, --border...)
+    styles/               Tailwind, fontes e tokens (primitives.css é GERADO)
     components/
       ui/                 componentes do shadcn (já adaptados)
-      layout/             AppShell, Header, Footer
-    lib/                  utils (cn), contraste
-    pages/                Home, StyleGuide, NotFound
+      layout/             AppShell, Header, Footer, DashboardLayout, RequireAuth/Role
+      estados/            carregando, vazio, erro, alerta, erro de campo
+      formulario/         Campo (label + aria), SelectSimples
+      reservas/           StatusBadge, ReservaItem
+      espacos/            indicadores, atributos por tipo, agenda, ações do admin
+      Confirmacao.tsx     diálogo de confirmação das ações de estado
+    lib/
+      api/                tipos do contrato, rótulos pt-BR, erros, cliente HTTP,
+                          implementação real (real/) e simulada (simulado/)
+      reservas.ts         regras puras: conflito [a,b), ocorrências, validação, datas
+      AuthProvider.tsx    sessão; useRecurso, useFiltrosUrl
+    pages/                uma pasta por área (espacos/) ou arquivo por tela
     router.tsx, main.tsx
 ```
+
+**Regra principal:** as páginas importam só de `@/lib/api` e mostram erros com
+`mensagemAmigavel(erro)`, nunca o texto cru do backend.
 
 ## Regras da identidade (resumo)
 
