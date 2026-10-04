@@ -1,8 +1,7 @@
 import { basicAuth, request } from '@/lib/api/cliente'
 import type { ApiAuth, Usuario } from '@/lib/api/tipos'
 
-// Formato atual da branch: `{ nome, email, tipo }`, sem id nem departamento.
-// O contrato (seção 5.2) prevê `{ usuario: Usuario, token?, expiraEm? }`. Aceita os dois.
+// Aceita respostas simples do backend atual e o envelope de compatibilidade legado.
 type RespostaLogin = Partial<Usuario> & { usuario?: Usuario }
 
 function adaptarUsuario(resposta: RespostaLogin): Usuario {

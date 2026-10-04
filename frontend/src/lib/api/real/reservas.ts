@@ -1,8 +1,7 @@
 import { request } from '@/lib/api/cliente'
 import type { ApiReservas, Pagina, Reserva, TipoEspaco } from '@/lib/api/tipos'
 
-// A branch devolve `espaco` e `professor` como texto, sem id, e o tipo em `tipoEspaco`.
-// O adaptador converte para o tipo do contrato; quando a API mudar, ele vira identidade.
+// Aceita os objetos atuais e mantém compatibilidade com respostas textuais de servidores antigos.
 type ReservaBruta = Omit<Reserva, 'espaco' | 'professor'> & {
   espaco: Reserva['espaco'] | string
   professor?: Reserva['professor'] | string
@@ -38,7 +37,7 @@ export function adaptarReserva(bruta: ReservaBruta): Reserva {
 
 export const reservasReal: ApiReservas = {
   async criar(nova) {
-    // A branch responde `201 { id, status }`; o contrato prevê a `Reserva` completa.
+    // O backend atual retorna a reserva completa; os defaults mantêm compatibilidade legada.
     const resposta = await request<Partial<ReservaBruta> & { id: number }>('/reservas', {
       method: 'POST',
       corpo: nova,

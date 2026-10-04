@@ -4,8 +4,8 @@ React + Vite + TypeScript, com **Tailwind CSS v4** e **shadcn/ui**, personalizad
 visual do CIn-UFPE. A fonte de verdade da identidade é
 [`docs/identidade-cin-ufpe.md`](docs/identidade-cin-ufpe.md).
 
-> Estado atual: todas as telas do MVP do [PRD](../docs/prd.md) prontas, funcionando com uma **API
-> simulada** no navegador até o backend ficar pronto. Para ligar ao backend, veja
+> Estado atual: todas as telas do MVP do [PRD](../docs/prd.md) prontas e integradas à API HTTP do
+> backend. Para detalhes da integração, veja
 > [`docs/integracao-backend.md`](docs/integracao-backend.md). A página `/style-guide` (só em
 > `npm run dev`) é a referência visual.
 
@@ -17,11 +17,12 @@ Requer Node 20.19+ (ou 22.12+).
 cd frontend
 npm install
 cp .env.example .env.local   # VITE_API_URL=/api; o Vite encaminha /api ao backend
-npm run dev                  # http://localhost:5173 (API simulada)
+npm run dev                  # http://localhost:5173 (API real em 127.0.0.1:18080)
 ```
 
-Em `npm run dev`, a API é simulada por padrão: os dados ficam no `sessionStorage` do navegador e a
-tela de login mostra as contas de teste e o botão "Restaurar dados de exemplo".
+Sem `VITE_API_SIMULADA`, o frontend usa o backend tanto em desenvolvimento quanto no build de
+produção. Para testar sem iniciar o C++, defina `VITE_API_SIMULADA=todos`; nesse modo os dados ficam
+no `sessionStorage` e a tela de login mostra as contas de demonstração.
 
 | Script           | O que faz                                                                |
 | ---------------- | ------------------------------------------------------------------------ |

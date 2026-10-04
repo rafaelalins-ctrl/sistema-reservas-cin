@@ -1,7 +1,7 @@
 // Carga inicial do simulado. As datas são relativas a hoje, para a demonstração nunca envelhecer.
 // Contas de teste: ver contas.ts.
 import type { DiaSemana, Espaco, Horario, Reserva, Usuario } from '@/lib/api/tipos'
-import { SENHA_TESTE } from '@/lib/api/simulado/contas'
+import { EMAIL_ADMIN_TESTE, SENHA_TESTE } from '@/lib/api/simulado/contas'
 import { dataLocal, diaDaSemana, somarDias } from '@/lib/reservas'
 
 export type UsuarioSimulado = Usuario & { senha: string }
@@ -27,7 +27,7 @@ function usuarios(): UsuarioSimulado[] {
     {
       id: 3,
       nome: 'Carla Mendes',
-      email: 'admin@cin.ufpe.br',
+      email: EMAIL_ADMIN_TESTE,
       tipo: 'ADMINISTRADOR',
       senha: SENHA_TESTE,
     },

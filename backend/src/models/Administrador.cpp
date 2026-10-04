@@ -10,6 +10,6 @@ bool Administrador::aprovarReserva(SistemaDeReservas& sistema, int idReserva) {
     return sistema.aprovarReserva(idReserva);
 }
 
-bool Administrador::rejeitarReserva(SistemaDeReservas& sistema, int idReserva) {
-    return sistema.rejeitarReserva(idReserva);
+bool Administrador::rejeitarReserva(SistemaDeReservas& sistema, int idReserva, const std::string& motivo) {
+    return sistema.rejeitarReserva(idReserva, motivo);
 }

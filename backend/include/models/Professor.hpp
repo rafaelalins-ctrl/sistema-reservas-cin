@@ -5,6 +5,7 @@
 class Reserva;
 class SistemaDeReservas;
 
+// Usuario que pode solicitar reservas e cancelar as proprias.
 class Professor : public Usuario {
 private:
     std::string departamento;
@@ -17,7 +18,8 @@ public:
     bool validarPermissaoReserva(const Espaco& e) const override;
 
     bool solicitarReserva(SistemaDeReservas& sistema, std::shared_ptr<Reserva> reserva);
-    bool cancelarReserva(SistemaDeReservas& sistema, int idReserva);
+    bool cancelarReserva(SistemaDeReservas& sistema, int idReserva,
+                         const std::string& motivo = "");
 
     const std::string& getDepartamento() const { return departamento; }
 };

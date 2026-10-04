@@ -3,6 +3,7 @@
 
 Horario::Horario(DiaSemana diaSemana, int horaInicioMin, int horaFimMin)
     : diaSemana(diaSemana), horaInicioMin(horaInicioMin), horaFimMin(horaFimMin) {
+    // O intervalo precisa caber em um dia e ter inicio antes do fim.
     if (horaInicioMin < 0 || horaFimMin > 1440 || horaInicioMin >= horaFimMin) {
         throw std::invalid_argument("Horario deve estar entre 0 e 1440 minutos e ter inicio anterior ao fim.");
     }

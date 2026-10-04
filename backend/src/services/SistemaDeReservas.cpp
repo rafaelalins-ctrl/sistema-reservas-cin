@@ -14,6 +14,7 @@ DiaSemana diaDaData(const std::string& data) {
     if (entrada.fail() || entrada.peek() != std::char_traits<char>::eof()) {
         throw std::invalid_argument("Data deve usar o formato AAAA-MM-DD.");
     }
+    // Meio-dia evita que a conversao de fuso altere o dia em horarios de verao.
     partes.tm_hour = 12;
     partes.tm_isdst = -1;
     if (std::mktime(&partes) == -1) throw std::invalid_argument("Data invalida.");
@@ -34,6 +35,19 @@ std::string proximaData(const std::string& data) {
     char proxima[11];
     std::strftime(proxima, sizeof(proxima), "%Y-%m-%d", &partes);
     return proxima;
+}
+
+std::string dataHojeLocal() {
+    const std::time_t agora = std::time(nullptr);
+    std::tm local{};
+#ifdef _WIN32
+    localtime_s(&local, &agora);
+#else
+    localtime_r(&agora, &local);
+#endif
+    char data[11];
+    std::strftime(data, sizeof(data), "%Y-%m-%d", &local);
+    return data;
 }
 
 std::string aparar(const std::string& valor) {
@@ -83,7 +97,8 @@ std::vector<std::shared_ptr<Espaco>> SistemaDeReservas::listarEspacosDisponiveis
     return disponiveis;
 }
 
-bool SistemaDeReservas::processarNovaReserva(std::shared_ptr<Reserva> r) {
+bool SistemaDeReservas::processarNovaReserva(
+    std::shared_ptr<Reserva> r, std::vector<ConflitoReserva>* conflitos) {
     if (!r || !r->getEspaco() || !r->getSolicitante()) return false;
     if (r->getDataFim() < r->getDataInicio() || r->getHorarios().empty()) return false;
 
@@ -92,7 +107,7 @@ bool SistemaDeReservas::processarNovaReserva(std::shared_ptr<Reserva> r) {
     }
 
     if (!horariosDisponiveis(*r->getEspaco(), r->getHorarios(),
-                             r->getDataInicio(), r->getDataFim())) return false;
+                             r->getDataInicio(), r->getDataFim(), 0, conflitos)) return false;
 
     repoReservas.salvar(r);
     return true;
@@ -100,17 +115,21 @@ bool SistemaDeReservas::processarNovaReserva(std::shared_ptr<Reserva> r) {
 
 bool SistemaDeReservas::horariosDisponiveis(
     const Espaco& espaco, const std::vector<Horario>& horarios,
-    const std::string& dataInicio, const std::string& dataFim, int idReservaIgnorada) {
+    const std::string& dataInicio, const std::string& dataFim, int idReservaIgnorada,
+    std::vector<ConflitoReserva>* conflitos) {
+    if (conflitos) conflitos->clear();
     if (horarios.empty() || dataFim < dataInicio) return false;
     diaDaData(dataInicio);
     diaDaData(dataFim);
 
+    // Um pedido nao pode ter dois horarios sobrepostos no mesmo dia da semana.
     for (std::size_t i = 0; i < horarios.size(); ++i) {
         for (std::size_t j = i + 1; j < horarios.size(); ++j) {
             if (horarios[i].conflitaCom(horarios[j])) return false;
         }
     }
 
+    // Cada linha semanal precisa acontecer ao menos uma vez dentro do periodo.
     std::vector<bool> horarioOcorreu(horarios.size(), false);
     for (std::string data = dataInicio; data <= dataFim; data = proximaData(data)) {
         const auto dia = diaDaData(data);
@@ -118,12 +137,19 @@ bool SistemaDeReservas::horariosDisponiveis(
             if (horarios[i].getDiaSemana() == dia) {
                 horarioOcorreu[i] = true;
                 if (!verificarDisponibilidade(espaco, horarios[i], data, idReservaIgnorada)) {
-                    return false;
+                    if (conflitos) {
+                        conflitos->push_back({data, horarios[i].getHoraInicioMin(),
+                                              horarios[i].getHoraFimMin()});
+                    } else {
+                        return false;
+                    }
                 }
             }
         }
     }
-    return std::all_of(horarioOcorreu.begin(), horarioOcorreu.end(), [](bool ocorreu) { return ocorreu; });
+    const bool todosOcorreram = std::all_of(
+        horarioOcorreu.begin(), horarioOcorreu.end(), [](bool ocorreu) { return ocorreu; });
+    return todosOcorreram && (!conflitos || conflitos->empty());
 }
 
 std::shared_ptr<Usuario> SistemaDeReservas::autenticarUsuario(
@@ -173,12 +199,13 @@ bool SistemaDeReservas::aprovarReserva(int idReserva) {
     return repoReservas.atualizarStatusPendente(idReserva, StatusReserva::APROVADA);
 }
 
-bool SistemaDeReservas::rejeitarReserva(int idReserva) {
-    return repoReservas.atualizarStatusPendente(idReserva, StatusReserva::REJEITADA);
+bool SistemaDeReservas::rejeitarReserva(int idReserva, const std::string& motivo) {
+    return repoReservas.atualizarStatusPendente(
+        idReserva, StatusReserva::REJEITADA, aparar(motivo));
 }
 
-bool SistemaDeReservas::cancelarReserva(int idReserva, int idProfessor) {
-    return repoReservas.cancelarReserva(idReserva, idProfessor);
+bool SistemaDeReservas::cancelarReserva(int idReserva, int idProfessor, const std::string& motivo) {
+    return repoReservas.cancelarReserva(idReserva, idProfessor, dataHojeLocal(), aparar(motivo));
 }
 
 void SistemaDeReservas::removerEspacoDoSistema(int idEspaco) {

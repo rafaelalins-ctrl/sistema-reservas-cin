@@ -2,7 +2,7 @@
 #include <string>
 
 // ==========================================
-// ENUMS DE INFRAESTRUTURA E DOMINIO
+// Valores usados pelo dominio e gravados no banco/API como texto.
 // ==========================================
 
 enum class BlocoCIn { BLOCO_A, BLOCO_B, BLOCO_C, BLOCO_D, BLOCO_E, AREA_2 };

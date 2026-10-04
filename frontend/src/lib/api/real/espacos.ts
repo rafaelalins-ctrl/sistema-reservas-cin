@@ -2,9 +2,8 @@ import { request } from '@/lib/api/cliente'
 import type { Agenda, ApiEspacos, Espaco, TipoEspaco } from '@/lib/api/tipos'
 import { diaDaSemana } from '@/lib/reservas'
 
-// A API atual devolve só `id, identificacao, capacidade, tipo, descricao, emManutencao`.
-// Enquanto o contrato completo (seção 5.3) não existir, os atributos ausentes recebem valores
-// neutros. Quando a API devolver `Espaco` completo, este adaptador vira identidade.
+// Mantém compatibilidade com respostas parciais de instalações antigas; o backend atual devolve
+// todos os campos de `Espaco`.
 type EspacoBruto = Partial<Espaco> & { id: number; identificacao: string; tipo?: string }
 
 export function adaptarEspaco(bruto: EspacoBruto): Espaco {
@@ -69,7 +68,7 @@ export const espacosReal: ApiEspacos = {
         capacidade: filtros.capacidadeMin ?? 1,
       },
     })
-    // A branch devolve só `id, identificacao, capacidade`: completa com a lista de espaços.
+    // Compatibilidade com servidores antigos que devolvem apenas os campos básicos.
     if (resultado.every((e) => e.tipo)) return resultado.map(adaptarEspaco)
     const ids = new Set(resultado.map((e) => e.id))
     const todos = await this.listar()

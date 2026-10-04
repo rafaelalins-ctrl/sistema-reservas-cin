@@ -3,6 +3,7 @@
 #include "repositories/IRepositorio.hpp"
 #include "models/Espaco.hpp"
 
+// Salva e recupera espacos, reconstruindo a classe concreta pelo tipo gravado.
 class RepositorioEspaco : public IRepositorio<Espaco> {
 private:
     sqlite3* db; // conexao nao-possuida (owned pelo SistemaDeReservas / main)

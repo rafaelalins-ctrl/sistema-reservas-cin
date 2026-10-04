@@ -18,6 +18,8 @@ set(OLD_GLOB
   "C:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/repositories/RepositorioEspaco.cpp"
   "C:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/repositories/RepositorioReserva.cpp"
   "C:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/repositories/RepositorioUsuario.cpp"
+  "C:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/routes/ApiHttp.cpp"
+  "C:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/routes/Rotas.cpp"
   "C:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/services/SistemaDeReservas.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")

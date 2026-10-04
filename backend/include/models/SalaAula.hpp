@@ -1,6 +1,7 @@
 #pragma once
 #include "models/Espaco.hpp"
 
+// Espaco de aula com informacoes proprias de quadro e projetor.
 class SalaAula : public Espaco {
 private:
     TipoQuadro tipoQuadro;
