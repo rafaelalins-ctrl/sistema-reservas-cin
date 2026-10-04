@@ -1,34 +1,45 @@
-import { ArrowRightIcon, SpinnerIcon, WarningCircleIcon } from '@phosphor-icons/react'
-import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { ArrowRightIcon, InfoIcon, SpinnerIcon } from '@phosphor-icons/react'
+import { useRef, useState, type FormEvent } from 'react'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 
+import { Alerta } from '@/components/estados/Estados'
+import { Campo, Sobrelinha } from '@/components/formulario/Campo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { UsuarioAutenticado } from '@/lib/api'
+import { ehErro, mensagemAmigavel, modoSimulado, resetarSimulado, usaSimulado } from '@/lib/api'
+import { CONTAS_TESTE, SENHA_TESTE } from '@/lib/api/simulado/contas'
 import { useAuth } from '@/lib/auth-context'
+import { toast } from 'sonner'
+
+type EstadoNavegacao = { de?: string; email?: string } | null
 
 export function Login() {
-  const { sessao, entrar } = useAuth()
+  const { sessao, entrar, expirou } = useAuth()
   const navegar = useNavigate()
-  const [email, setEmail] = useState('')
+  const estado = useLocation().state as EstadoNavegacao
+  const [email, setEmail] = useState(estado?.email ?? '')
   const [senha, setSenha] = useState('')
-  const [tipoConta, setTipoConta] = useState<UsuarioAutenticado['tipo']>('PROFESSOR')
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const campoSenha = useRef<HTMLInputElement>(null)
 
-  if (sessao) return <Navigate to="/app" replace />
+  // Volta para a rota protegida que levou ao login (F03, item 4).
+  const destino = estado?.de ?? '/app'
+  if (sessao) return <Navigate to={destino} replace />
 
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErro('')
     setEnviando(true)
     try {
-      await entrar({ email, senha }, tipoConta)
-      navegar('/app', { replace: true })
-    } catch (error) {
-      setErro(error instanceof Error ? error.message : 'Não foi possível entrar.')
+      await entrar({ email, senha })
+      navegar(destino, { replace: true })
+    } catch (e) {
+      setErro(mensagemAmigavel(e, { 401: 'E-mail ou senha incorretos.' }))
+      if (ehErro(e, 401)) {
+        setSenha('')
+        campoSenha.current?.focus()
+      }
     } finally {
       setEnviando(false)
     }
@@ -37,63 +48,97 @@ export function Login() {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6 py-6">
       <header className="flex flex-col gap-2">
-        <p className="text-sm font-bold text-primary">ACESSO AO SISTEMA</p>
+        <Sobrelinha>Acesso ao sistema</Sobrelinha>
         <h1 className="text-2xl">Entrar</h1>
-        <p className="text-sm text-muted-foreground">Acesse sua área de reservas.</p>
+        <p className="text-sm text-muted-foreground">
+          Professores e administradores entram pelo mesmo formulário.
+        </p>
       </header>
-      <form onSubmit={enviar} className="flex flex-col gap-5 rounded-md border border-border p-5">
-        <div className="flex flex-col gap-2">
-          <Label>Tipo de acesso</Label>
-          <Tabs
-            value={tipoConta}
-            onValueChange={(valor) => setTipoConta(valor as UsuarioAutenticado['tipo'])}
-          >
-            <TabsList className="h-10 w-full">
-              <TabsTrigger value="PROFESSOR">Professor</TabsTrigger>
-              <TabsTrigger value="ADMINISTRADOR">Administrador</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="login-email">E-mail institucional</Label>
-          <Input
-            id="login-email"
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="h-10"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="login-senha">Senha</Label>
-          <Input
-            id="login-senha"
-            type="password"
-            autoComplete="current-password"
-            required
-            value={senha}
-            onChange={(event) => setSenha(event.target.value)}
-            className="h-10"
-          />
-        </div>
-        {erro && (
-          <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
-            <WarningCircleIcon className="mt-0.5 shrink-0" /> {erro}
-          </p>
-        )}
-        <Button type="submit" disabled={enviando} className="w-full">
+
+      {expirou && !erro && <Alerta>Sua sessão expirou. Entre novamente.</Alerta>}
+
+      <form
+        onSubmit={enviar}
+        className="flex flex-col gap-5 rounded-md border border-border bg-background p-5"
+      >
+        <Campo id="login-email" rotulo="E-mail institucional">
+          {(props) => (
+            <Input
+              {...props}
+              type="email"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-10"
+            />
+          )}
+        </Campo>
+        <Campo id="login-senha" rotulo="Senha">
+          {(props) => (
+            <Input
+              {...props}
+              ref={campoSenha}
+              type="password"
+              autoComplete="current-password"
+              required
+              value={senha}
+              onChange={(event) => setSenha(event.target.value)}
+              className="h-10"
+            />
+          )}
+        </Campo>
+        {erro && <Alerta>{erro}</Alerta>}
+        <Button type="submit" disabled={enviando} className="h-10 w-full">
           {enviando ? <SpinnerIcon className="animate-spin" /> : <ArrowRightIcon />}
-          Acessar reservas
+          {enviando ? 'Entrando…' : 'Entrar'}
         </Button>
       </form>
+
+      {usaSimulado('auth') && <ContasDeTeste />}
+      {!usaSimulado('auth') && modoSimulado && (
+        <p className="text-xs text-muted-foreground">
+          Parte da API está simulada nesta execução (VITE_API_SIMULADA).
+        </p>
+      )}
+
       <Link to="/cadastro" className="text-sm text-primary hover:underline">
         Não tem conta? Cadastre-se como professor
       </Link>
-      <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-        Voltar para a página inicial
-      </Link>
     </div>
+  )
+}
+
+/** Só no modo simulado: as contas de teste existem apenas em lib/api/simulado/dados.ts. */
+function ContasDeTeste() {
+  return (
+    <aside
+      aria-label="Modo simulado"
+      className="flex flex-col gap-2 rounded-md border border-dashed border-border p-4 text-sm"
+    >
+      <p className="flex items-center gap-2 font-bold">
+        <InfoIcon /> Modo simulado
+      </p>
+      <p className="text-muted-foreground">
+        Os dados ficam no navegador. Contas de teste (senha <code>{SENHA_TESTE}</code>):
+      </p>
+      <ul className="flex flex-col gap-1">
+        {CONTAS_TESTE.map((conta) => (
+          <li key={conta.email}>
+            <code>{conta.email}</code> · {conta.perfil}
+          </li>
+        ))}
+      </ul>
+      <Button
+        variant="link"
+        className="h-auto self-start p-0"
+        onClick={async () => {
+          await resetarSimulado()
+          toast.success('Dados de exemplo restaurados.')
+        }}
+      >
+        Restaurar dados de exemplo
+      </Button>
+    </aside>
   )
 }
