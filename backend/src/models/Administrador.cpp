@@ -1,14 +1,15 @@
 #include "models/Administrador.hpp"
+#include "services/SistemaDeReservas.hpp"
 
 bool Administrador::validarPermissaoReserva(const Espaco& /*e*/) const {
     // Administrador tem permissao irrestrita para reservar/gerenciar qualquer espaco.
     return true;
 }
 
-void Administrador::aprovarReserva(int /*idReserva*/) {
-    // TODO: delegar para SistemaDeReservas -> RepositorioReserva::atualizar(status=APROVADA)
+bool Administrador::aprovarReserva(SistemaDeReservas& sistema, int idReserva) {
+    return sistema.aprovarReserva(idReserva);
 }
 
-void Administrador::rejeitarReserva(int /*idReserva*/) {
-    // TODO: delegar para SistemaDeReservas -> RepositorioReserva::atualizar(status=REJEITADA)
+bool Administrador::rejeitarReserva(SistemaDeReservas& sistema, int idReserva) {
+    return sistema.rejeitarReserva(idReserva);
 }

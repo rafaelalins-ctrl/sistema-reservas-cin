@@ -1,0 +1,3 @@
+C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/_deps/crow-subbuild/CMakeFiles/crow-populate.dir
+C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/_deps/crow-subbuild/CMakeFiles/edit_cache.dir
+C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/_deps/crow-subbuild/CMakeFiles/rebuild_cache.dir

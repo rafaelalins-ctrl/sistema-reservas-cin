@@ -1,6 +1,8 @@
 #pragma once
 #include "models/Usuario.hpp"
 
+class SistemaDeReservas;
+
 class Administrador : public Usuario {
 public:
     using Usuario::Usuario;
@@ -8,7 +10,6 @@ public:
     bool validarPermissaoReserva(const Espaco& e) const override;
 
     // Acoes exclusivas do administrador sobre reservas pendentes.
-    // Implementadas via SistemaDeReservas/RepositorioReserva (assinatura de exemplo).
-    void aprovarReserva(int idReserva);
-    void rejeitarReserva(int idReserva);
+    bool aprovarReserva(SistemaDeReservas& sistema, int idReserva);
+    bool rejeitarReserva(SistemaDeReservas& sistema, int idReserva);
 };

@@ -34,6 +34,7 @@ export function Home() {
             </Link>
           )}
         </Button>
+        <p className="text-sm text-muted-foreground">Salas, laboratórios e auditórios</p>
       </div>
     </div>
   )
