@@ -4,7 +4,7 @@
 #include "services/SistemaDeReservas.hpp"
 
 Professor::Professor(int id, std::string nome, std::string email, std::string senhaHash,
-                      std::string departamento)
+                     std::string departamento)
     : Usuario(id, std::move(nome), std::move(email), std::move(senhaHash)),
       departamento(std::move(departamento)) {}
 
