@@ -1,6 +1,5 @@
 import { SignOutIcon } from '@phosphor-icons/react'
 import { Link, NavLink } from 'react-router-dom'
-import { SignOutIcon } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'

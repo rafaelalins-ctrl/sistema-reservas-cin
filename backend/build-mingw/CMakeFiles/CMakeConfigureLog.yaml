@@ -75741,3 +75741,185 @@ events:
         - "C:/Program Files (x86)/sistema_reservas_cin"
       CMAKE_FIND_ROOT_PATH: "C:/vcpkg/installed/x64-mingw-dynamic;C:/vcpkg/installed/x64-mingw-dynamic/debug"
 ...
+
+---
+events:
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/mingw64/share/cmake-4.4/Modules/FindPython/Support.cmake:2621 (find_program)"
+      - "C:/mingw64/share/cmake-4.4/Modules/FindPython3.cmake:699 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:939 (_find_package)"
+      - "build-mingw/_deps/crow-src/CMakeLists.txt:40 (find_package)"
+    mode: "program"
+    variable: "_Python3_EXECUTABLE_DEBUG"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "python3.11_d"
+      - "python3_d"
+      - "python_d"
+    candidate_directories:
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/"
+    searched_directories:
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.com"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.exe"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.com"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.exe"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.com"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.exe"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d"
+    found: false
+    search_context:
+      CMAKE_PROGRAM_PATH:
+        - "C:/vcpkg/installed/x64-mingw-dynamic/tools"
+      CMAKE_PREFIX_PATH:
+        - "C:/vcpkg/installed/x64-mingw-dynamic"
+        - "C:/vcpkg/installed/x64-mingw-dynamic/debug"
+      ENV{PATH}:
+        - "c:\\Users\\rafal\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand"
+        - "c:\\Users\\rafal\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\copilotCli"
+        - "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Java\\jdk-21\\bin"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\nodejs\\"
+        - "C:\\mingw64\\bin"
+        - "C:\\Program Files\\MySQL\\MySQL Shell 8.0\\bin\\"
+        - "C:\\Users\\rafal\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\rafal\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\rafal\\AppData\\Roaming\\npm"
+        - "C:\\Users\\rafal\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin"
+        - "c:\\Users\\rafal\\.vscode\\extensions\\ms-python.debugpy-2026.6.0-win32-x64\\bundled\\scripts\\noConfigScripts"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/sistema_reservas_cin"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/mingw64"
+        - "C:/Program Files (x86)/sistema_reservas_cin"
+      CMAKE_FIND_ROOT_PATH: "C:/vcpkg/installed/x64-mingw-dynamic;C:/vcpkg/installed/x64-mingw-dynamic/debug"
+...
+
+---
+events:
+  -
+    kind: "find-v1"
+    backtrace:
+      - "C:/mingw64/share/cmake-4.4/Modules/FindPython/Support.cmake:2621 (find_program)"
+      - "C:/mingw64/share/cmake-4.4/Modules/FindPython3.cmake:699 (include)"
+      - "C:/vcpkg/scripts/buildsystems/vcpkg.cmake:939 (_find_package)"
+      - "build-mingw/_deps/crow-src/CMakeLists.txt:40 (find_package)"
+    mode: "program"
+    variable: "_Python3_EXECUTABLE_DEBUG"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "python3.11_d"
+      - "python3_d"
+      - "python_d"
+    candidate_directories:
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/"
+    searched_directories:
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.com"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.exe"
+      - "C:/vcpkg/installed/x64-mingw-dynamic/debug/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.com"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d.exe"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3.11_d"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.com"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d.exe"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python3_d"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.com"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d.exe"
+      - "C:/Program Files/WindowsApps/PythonSoftwareFoundation.Python.3.11_3.11.2544.0_x64__qbz5n2kfra8p0/python_d"
+    found: false
+    search_context:
+      CMAKE_PROGRAM_PATH:
+        - "C:/vcpkg/installed/x64-mingw-dynamic/tools"
+      CMAKE_PREFIX_PATH:
+        - "C:/vcpkg/installed/x64-mingw-dynamic"
+        - "C:/vcpkg/installed/x64-mingw-dynamic/debug"
+      ENV{PATH}:
+        - "c:\\Users\\rafal\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\debugCommand"
+        - "c:\\Users\\rafal\\AppData\\Roaming\\Code\\User\\globalStorage\\github.copilot-chat\\copilotCli"
+        - "C:\\Program Files\\Common Files\\Oracle\\Java\\javapath"
+        - "C:\\WINDOWS\\system32"
+        - "C:\\WINDOWS"
+        - "C:\\WINDOWS\\System32\\Wbem"
+        - "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\"
+        - "C:\\WINDOWS\\System32\\OpenSSH\\"
+        - "C:\\Program Files\\Java\\jdk-21\\bin"
+        - "C:\\Program Files\\Git\\cmd"
+        - "C:\\Program Files\\nodejs\\"
+        - "C:\\mingw64\\bin"
+        - "C:\\Program Files\\MySQL\\MySQL Shell 8.0\\bin\\"
+        - "C:\\Users\\rafal\\AppData\\Local\\Microsoft\\WindowsApps"
+        - "C:\\Users\\rafal\\AppData\\Local\\Programs\\Microsoft VS Code\\bin"
+        - "C:\\Users\\rafal\\AppData\\Roaming\\npm"
+        - "C:\\Users\\rafal\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin"
+        - "c:\\Users\\rafal\\.vscode\\extensions\\ms-python.debugpy-2026.6.0-win32-x64\\bundled\\scripts\\noConfigScripts"
+      CMAKE_INSTALL_PREFIX: "C:/Program Files (x86)/sistema_reservas_cin"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "C:/Program Files"
+        - "C:/Program Files (x86)"
+        - "C:/mingw64"
+        - "C:/Program Files (x86)/sistema_reservas_cin"
+      CMAKE_FIND_ROOT_PATH: "C:/vcpkg/installed/x64-mingw-dynamic;C:/vcpkg/installed/x64-mingw-dynamic/debug"
+...

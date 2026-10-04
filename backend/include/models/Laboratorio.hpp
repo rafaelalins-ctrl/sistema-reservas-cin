@@ -2,6 +2,7 @@
 #include <vector>
 #include "models/Espaco.hpp"
 
+// Espaco com computadores e uma lista de softwares instalados.
 class Laboratorio : public Espaco {
 private:
     int qtdComputadores = 0;

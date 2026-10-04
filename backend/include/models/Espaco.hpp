@@ -7,6 +7,7 @@
 // ==========================================
 class Espaco {
 protected:
+    // Informacoes compartilhadas por salas, laboratorios e auditorios.
     int id = 0;
     std::string identificacao;
     int capacidade = 0;
@@ -25,7 +26,7 @@ public:
 
     virtual ~Espaco() = default;
 
-    // Metodo polimorfico central: cada subtipo descreve a si mesmo
+    // Cada subtipo monta uma descricao com suas caracteristicas.
     virtual std::string obterDescricaoDetalhada() const = 0;
 
     // Identifica o "tipo" concreto, usado pelo RepositorioEspaco para

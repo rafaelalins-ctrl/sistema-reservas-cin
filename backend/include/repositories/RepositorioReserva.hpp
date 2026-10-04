@@ -4,10 +4,11 @@
 #include "repositories/RepositorioEspaco.hpp"
 #include "models/Reserva.hpp"
 
+// Persiste reservas e seus horarios semanais em tabelas relacionadas.
 class RepositorioReserva : public IRepositorio<Reserva> {
 private:
-    sqlite3* db;              // conexao nao-possuida
-    RepositorioEspaco* repoEspaco; // usado para resolver Reserva::espaco ao ler do banco
+    sqlite3* db; // Conexao nao possuida por este repositorio.
+    RepositorioEspaco* repoEspaco; // Dependencia nao possuida, usada ao reconstruir a reserva.
 
     std::vector<Horario> listarHorarios(int idReserva) const;
     std::shared_ptr<Reserva> mapearLinha(sqlite3_stmt* stmt) const;
@@ -20,8 +21,11 @@ public:
     std::shared_ptr<Reserva> buscar(int id) override;
     void atualizar(std::shared_ptr<Reserva> obj) override;
     void atualizarHorarios(int idReserva, const std::vector<Horario>& horarios);
-    bool atualizarStatusPendente(int id, StatusReserva status);
-    bool cancelarReserva(int id, int idProfessor);
+    // So altera o estado se a reserva ainda estiver pendente.
+    bool atualizarStatusPendente(int id, StatusReserva status, const std::string& motivo = "");
+    // Cancela somente reservas do professor que ainda nao terminaram.
+    bool cancelarReserva(int id, int idProfessor, const std::string& hoje,
+                         const std::string& motivo = "");
     void remover(int id) override;
     std::vector<std::shared_ptr<Reserva>> listarTodos() override;
 

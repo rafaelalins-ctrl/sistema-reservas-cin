@@ -10,6 +10,7 @@
 #include <vector>
 
 namespace {
+// Parametros usados para gerar e conferir hashes de senha.
 constexpr int iteracoesPbkdf2 = 600000;
 constexpr std::size_t tamanhoSalt = 16;
 constexpr std::size_t tamanhoHash = 32;
@@ -28,6 +29,7 @@ bool decodificarBase64(std::string_view texto, unsigned char* saida, std::size_t
     const int decodificado = EVP_DecodeBlock(temporario.data(),
         reinterpret_cast<const unsigned char*>(texto.data()), static_cast<int>(texto.size()));
     if (decodificado < 0) return false;
+    // EVP_DecodeBlock conta tambem os bytes representados pelo padding '='.
     std::size_t tamanhoReal = static_cast<std::size_t>(decodificado);
     if (!texto.empty() && texto.back() == '=') --tamanhoReal;
     if (texto.size() > 1 && texto[texto.size() - 2] == '=') --tamanhoReal;
@@ -37,6 +39,7 @@ bool decodificarBase64(std::string_view texto, unsigned char* saida, std::size_t
 }
 
 bool verificarHashSenha(const std::string& senha, const std::string& hashArmazenado) {
+    // Formato: algoritmo$iteracoes$salt$hash.
     constexpr std::string_view prefixo = "pbkdf2_sha256$";
     if (hashArmazenado.compare(0, prefixo.size(), prefixo) != 0) return false;
 
@@ -71,6 +74,7 @@ bool verificarHashSenha(const std::string& senha, const std::string& hashArmazen
                           static_cast<int>(hashCalculado.size()), hashCalculado.data()) != 1) {
         return false;
     }
+    // Comparacao em tempo constante para nao revelar o ponto da diferenca.
     return CRYPTO_memcmp(hashEsperado.data(), hashCalculado.data(), hashCalculado.size()) == 0;
 }
 }

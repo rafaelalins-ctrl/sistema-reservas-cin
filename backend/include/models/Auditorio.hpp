@@ -1,6 +1,7 @@
 #pragma once
 #include "models/Espaco.hpp"
 
+// Espaco para eventos, com recursos de som e traducao.
 class Auditorio : public Espaco {
 private:
     bool equipamentoSom = false;

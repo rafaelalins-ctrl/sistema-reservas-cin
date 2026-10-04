@@ -14,9 +14,10 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { api, type Espaco } from '@/lib/api'
+import { api, TIPOS_ESPACO, type Espaco } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
-import { dataLocal, DIAS, minutos, nomeTipo } from '@/lib/reservas'
+import { dataLocal, diaDaSemana, minutos } from '@/lib/reservas'
+import { DIAS } from '@/lib/api/rotulos'
 
 function mensagemErro(error: unknown) {
   return error instanceof Error ? error.message : 'Não foi possível concluir a operação.'
@@ -37,8 +38,8 @@ export function BuscarReservas() {
 
   useEffect(() => {
     let ativo = true
-    api
-      .listarEspacos()
+    api.espacos
+      .listar()
       .then((resultado) => {
         if (ativo) setEspacos(resultado)
       })
@@ -53,7 +54,7 @@ export function BuscarReservas() {
     }
   }, [])
 
-  const dia = DIAS[new Date(`${data}T12:00:00`).getDay()]
+  const dia = diaDaSemana(data)
   const exibidos = idsDisponiveis
     ? espacos.filter((espaco) => idsDisponiveis.includes(espaco.id))
     : espacos.filter((espaco) => !espaco.emManutencao)
@@ -78,14 +79,13 @@ export function BuscarReservas() {
     setBuscando(true)
     setErro('')
     try {
-      const filtros = new URLSearchParams({
-        dia: dia.api,
-        inicio: String(minutos(inicio)),
-        fim: String(minutos(fim)),
+      const resultado = await api.espacos.disponiveis({
         data,
-        capacidade: String(capacidadeMinima),
+        inicioMin: minutos(inicio),
+        fimMin: minutos(fim),
+        capacidadeMin: capacidadeMinima,
       })
-      const resultado = await api.buscarDisponibilidade(filtros)
+      setEspacos(resultado)
       setIdsDisponiveis(resultado.map((espaco) => espaco.id))
     } catch (error) {
       setIdsDisponiveis([])
@@ -96,19 +96,16 @@ export function BuscarReservas() {
   }
 
   async function solicitar(espaco: Espaco) {
-    if (!sessao || !dia) return
+    if (sessao?.usuario.tipo !== 'PROFESSOR') return
     setSolicitandoId(espaco.id)
     setErro('')
     try {
-      const reserva = await api.solicitarReserva(
-        {
-          idEspaco: espaco.id,
-          dataInicio: data,
-          dataFim: data,
-          horarios: [{ dia: dia.api, inicioMin: minutos(inicio), fimMin: minutos(fim) }],
-        },
-        sessao.credenciais,
-      )
+      const reserva = await api.reservas.criar({
+        idEspaco: espaco.id,
+        dataInicio: data,
+        dataFim: data,
+        horarios: [{ dia, inicioMin: minutos(inicio), fimMin: minutos(fim) }],
+      })
       toast.success(`Solicitação ${reserva.id} enviada para aprovação.`)
       setIdsDisponiveis((ids) => ids?.filter((id) => id !== espaco.id) ?? null)
     } catch (error) {
@@ -194,7 +191,7 @@ export function BuscarReservas() {
           />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground lg:pb-2">
-          <CalendarBlankIcon size={18} /> {dia?.nome}
+          <CalendarBlankIcon size={18} /> {DIAS[dia]}
         </div>
         <Button type="submit" size="lg" disabled={buscando} className="h-10 w-full lg:w-auto">
           {buscando ? <SpinnerIcon className="animate-spin" /> : <MagnifyingGlassIcon />}
@@ -238,9 +235,10 @@ export function BuscarReservas() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <h4 className="font-bold">{espaco.identificacao}</h4>
-                        <span className="text-xs text-muted-foreground">{nomeTipo(espaco.tipo)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {TIPOS_ESPACO[espaco.tipo]}
+                        </span>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">{espaco.descricao}</p>
                       <span className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
                         <UsersIcon size={16} /> Até {espaco.capacidade} pessoas
                       </span>

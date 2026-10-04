@@ -50,8 +50,8 @@ void RepositorioReserva::salvar(std::shared_ptr<Reserva> obj) {
     }
 
     const char* sql =
-        "INSERT INTO reservas (data_inicio, data_fim, status, id_professor, id_espaco) "
-        "VALUES (?, ?, ?, ?, ?);";
+           "INSERT INTO reservas (data_inicio, data_fim, status, id_professor, id_espaco, criada_em, motivo) "
+           "VALUES (?, ?, ?, ?, ?, ?, ?);";
 
     executarSql(db, "BEGIN IMMEDIATE TRANSACTION;", "Erro ao iniciar transacao de reserva: ");
     sqlite3_stmt* stmt = nullptr;
@@ -65,6 +65,9 @@ void RepositorioReserva::salvar(std::shared_ptr<Reserva> obj) {
         sqlite3_bind_text(stmt, 3, toString(obj->getStatus()), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 4, obj->getSolicitante()->getId());
         sqlite3_bind_int(stmt, 5, obj->getEspaco()->getId());
+        sqlite3_bind_text(stmt, 6, obj->getCriadaEm().c_str(), -1, SQLITE_TRANSIENT);
+        if (obj->getMotivo().empty()) sqlite3_bind_null(stmt, 7);
+        else sqlite3_bind_text(stmt, 7, obj->getMotivo().c_str(), -1, SQLITE_TRANSIENT);
 
         if (sqlite3_step(stmt) != SQLITE_DONE) {
             throw std::runtime_error(std::string("Erro ao inserir reserva: ") + sqlite3_errmsg(db));
@@ -73,6 +76,7 @@ void RepositorioReserva::salvar(std::shared_ptr<Reserva> obj) {
         sqlite3_finalize(stmt);
         stmt = nullptr;
 
+        // A reserva e seus horarios precisam ser gravados juntos.
         inserirHorarios(db, obj->getId(), obj->getHorarios());
         executarSql(db, "COMMIT;", "Erro ao confirmar reserva: ");
     } catch (...) {
@@ -84,7 +88,7 @@ void RepositorioReserva::salvar(std::shared_ptr<Reserva> obj) {
 
 std::shared_ptr<Reserva> RepositorioReserva::buscar(int id) {
     const char* sql =
-        "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco "
+        "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco, criada_em, motivo "
         "FROM reservas WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -149,6 +153,7 @@ std::shared_ptr<Reserva> RepositorioReserva::mapearLinha(sqlite3_stmt* stmt) con
         sqlite3_finalize(stmtProfessor);
         throw std::runtime_error("Professor da reserva nao encontrado.");
     }
+    // Reserva guarda referencias ao professor e ao espaco, resolvidas pelos ids do banco.
     auto professor = std::make_shared<Professor>(
         sqlite3_column_int(stmtProfessor, 0), textoColuna(stmtProfessor, 1),
         textoColuna(stmtProfessor, 2), textoColuna(stmtProfessor, 3),
@@ -164,17 +169,21 @@ std::shared_ptr<Reserva> RepositorioReserva::mapearLinha(sqlite3_stmt* stmt) con
         id, textoColuna(stmt, 1), textoColuna(stmt, 2), professor,
         espaco, listarHorarios(id));
     reserva->setStatus(statusReservaFromString(textoColuna(stmt, 3)));
+    reserva->setCriadaEm(textoColuna(stmt, 6));
+    reserva->setMotivo(textoColuna(stmt, 7));
     return reserva;
 }
 
 void RepositorioReserva::atualizar(std::shared_ptr<Reserva> obj) {
-    const char* sql = "UPDATE reservas SET status = ? WHERE id = ?;";
+    const char* sql = "UPDATE reservas SET status = ?, motivo = ? WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         throw std::runtime_error(std::string("Erro ao preparar update de reserva: ") + sqlite3_errmsg(db));
     }
     sqlite3_bind_text(stmt, 1, toString(obj->getStatus()), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, obj->getId());
+    if (obj->getMotivo().empty()) sqlite3_bind_null(stmt, 2);
+    else sqlite3_bind_text(stmt, 2, obj->getMotivo().c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, obj->getId());
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         sqlite3_finalize(stmt);
         throw std::runtime_error(std::string("Erro ao atualizar reserva: ") + sqlite3_errmsg(db));
@@ -182,20 +191,22 @@ void RepositorioReserva::atualizar(std::shared_ptr<Reserva> obj) {
     sqlite3_finalize(stmt);
 }
 
-bool RepositorioReserva::atualizarStatusPendente(int id, StatusReserva status) {
+bool RepositorioReserva::atualizarStatusPendente(int id, StatusReserva status, const std::string& motivo) {
     if (status != StatusReserva::APROVADA && status != StatusReserva::REJEITADA) {
         return false;
     }
 
-    const char* sql = "UPDATE reservas SET status = ? WHERE id = ? AND status = ?;";
+    const char* sql = "UPDATE reservas SET status = ?, motivo = ? WHERE id = ? AND status = ?;";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         throw std::runtime_error(std::string("Erro ao preparar update de status da reserva: ") + sqlite3_errmsg(db));
     }
 
     sqlite3_bind_text(stmt, 1, toString(status), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, id);
-    sqlite3_bind_text(stmt, 3, toString(StatusReserva::PENDENTE), -1, SQLITE_TRANSIENT);
+    if (motivo.empty()) sqlite3_bind_null(stmt, 2);
+    else sqlite3_bind_text(stmt, 2, motivo.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, id);
+    sqlite3_bind_text(stmt, 4, toString(StatusReserva::PENDENTE), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         sqlite3_finalize(stmt);
@@ -207,20 +218,24 @@ bool RepositorioReserva::atualizarStatusPendente(int id, StatusReserva status) {
     return atualizado;
 }
 
-bool RepositorioReserva::cancelarReserva(int id, int idProfessor) {
+bool RepositorioReserva::cancelarReserva(int id, int idProfessor, const std::string& hoje,
+                                          const std::string& motivo) {
     const char* sql =
-        "UPDATE reservas SET status = ? WHERE id = ? AND id_professor = ? "
-        "AND status IN (?, ?);";
+        "UPDATE reservas SET status = ?, motivo = ? WHERE id = ? AND id_professor = ? "
+        "AND status IN (?, ?) AND data_fim >= ?;";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
         throw std::runtime_error(std::string("Erro ao preparar cancelamento de reserva: ") + sqlite3_errmsg(db));
     }
 
     sqlite3_bind_text(stmt, 1, toString(StatusReserva::CANCELADA), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_int(stmt, 2, id);
-    sqlite3_bind_int(stmt, 3, idProfessor);
-    sqlite3_bind_text(stmt, 4, toString(StatusReserva::PENDENTE), -1, SQLITE_TRANSIENT);
-    sqlite3_bind_text(stmt, 5, toString(StatusReserva::APROVADA), -1, SQLITE_TRANSIENT);
+    if (motivo.empty()) sqlite3_bind_null(stmt, 2);
+    else sqlite3_bind_text(stmt, 2, motivo.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 3, id);
+    sqlite3_bind_int(stmt, 4, idProfessor);
+    sqlite3_bind_text(stmt, 5, toString(StatusReserva::PENDENTE), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, toString(StatusReserva::APROVADA), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 7, hoje.c_str(), -1, SQLITE_TRANSIENT);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         sqlite3_finalize(stmt);
@@ -248,7 +263,7 @@ void RepositorioReserva::remover(int id) {
 
 std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarTodos() {
     const char* sql =
-        "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco "
+        "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco, criada_em, motivo "
         "FROM reservas ORDER BY id;";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -272,10 +287,10 @@ std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarTodos() {
 std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarPorEspacoEData(
         int idEspaco, const std::string& data, int idReservaIgnorada) {
         const char* sql = idReservaIgnorada > 0
-                ? "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco "
+            ? "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco, criada_em, motivo "
                     "FROM reservas WHERE id_espaco = ? AND data_inicio <= ? AND data_fim >= ? "
                     "AND id <> ? ORDER BY id;"
-                : "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco "
+                : "SELECT id, data_inicio, data_fim, status, id_professor, id_espaco, criada_em, motivo "
                     "FROM reservas WHERE id_espaco = ? AND data_inicio <= ? AND data_fim >= ? ORDER BY id;";
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {

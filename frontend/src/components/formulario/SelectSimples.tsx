@@ -33,7 +33,7 @@ export function SelectSimples<V extends string>({
 }) {
   return (
     <Select
-      value={valor || undefined}
+      value={valor}
       onValueChange={(v) => aoMudar(v as V)}
       disabled={desabilitado}
     >

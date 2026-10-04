@@ -96,7 +96,7 @@ export const router = createBrowserRouter([
                 {
                   path: '/style-guide',
                   lazy: async () => ({
-                    Component: (await import('@/pages/StyleGuide')).StyleGuide,
+                    Component: (await import('../docs/StyleGuide')).StyleGuide,
                   }),
                 },
               ]

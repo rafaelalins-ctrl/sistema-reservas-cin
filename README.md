@@ -6,6 +6,9 @@ para `Usuario` (Administrador/Professor) e `Espaco` (SalaAula/Laboratorio/Audito
 
 ## Arquitetura
 
+Veja o [relatorio do sistema](RELATORIO.md) para descricao de perfis, funcionalidades, modelo de
+dominio, persistencia, interface grafica e limites conhecidos.
+
 ```
 Cliente (React) --HTTP/JSON--> Crow (rotas) --> SistemaDeReservas (regras) --> Repositorios --> SQLite
 ```
@@ -91,25 +94,44 @@ ou em formatos desconhecidos sao rejeitados. Use esse metodo em uma ferramenta
 administrativa confiavel ao provisionar usuarios.
 
 O servidor sobe por padrão em `http://localhost:18080`. O arquivo `database/reservas.db`
-é criado/aberto automaticamente a partir do `schema.sql` na primeira execução.
+é criado/aberto automaticamente a partir do `schema.sql` na primeira execução. Se a tabela de
+espaços estiver vazia, ele importa do catálogo CIn 77 espaços reserváveis; capacidade e atributos
+ausentes do catálogo recebem valores de demonstração, descritos em
+[`frontend/docs/integracao-backend.md`](frontend/docs/integracao-backend.md).
+
+Para provisionar o primeiro administrador, defina `CIN_ADMIN_EMAIL` e `CIN_ADMIN_SENHA` antes de
+iniciar o servidor; `CIN_ADMIN_NOME` é opcional. A conta só é criada se ainda não houver um
+administrador. Não há senha administrativa padrão.
 
 ## Endpoints
 
-| Método | Rota                  | Descrição                                |
-|--------|------------------------|-------------------------------------------|
-| GET    | `/api/espacos`          | Lista todos os espaços cadastrados        |
-| GET    | `/api/espacos/disponiveis?dia=&inicio=&fim=&data=&capacidade=` | Lista espaços disponíveis numa data e horário |
-| POST   | `/api/auth/register` | Cadastra uma conta de professor |
-| POST   | `/api/auth/login` | Confere e-mail e senha no banco e retorna o perfil |
-| POST   | `/api/reservas`         | Cria uma solicitação (Professor autenticado) |
-| POST   | `/api/reservas/:id/aprovar` | Aprova uma reserva (Administrador) |
-| POST   | `/api/reservas/:id/rejeitar` | Rejeita uma reserva (Administrador) |
-| POST   | `/api/reservas/:id/cancelar` | Cancela uma reserva própria (Professor) |
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/api/espacos` | Lista e filtra espaços |
+| GET | `/api/espacos/:id` | Detalha um espaço |
+| POST | `/api/espacos` | Cria espaço (admin) |
+| PUT/PATCH/DELETE | `/api/espacos/:id` | Edita, altera manutenção ou remove (admin) |
+| GET | `/api/espacos/disponiveis` | Busca por data, horário e filtros |
+| GET | `/api/espacos/:id/agenda?de=&ate=` | Agenda do espaço |
+| GET | `/api/espacos/:id/reservas-futuras` | Contagem para admin |
+| GET | `/api/catalogo/espacos` | Catálogo CIn completo, incluindo espaços não reserváveis |
+| POST | `/api/auth/register` | Cadastra professor |
+| POST | `/api/auth/login` | Autentica via HTTP Basic |
+| GET/POST | `/api/reservas` | Lista paginada (admin) e cria solicitação (professor) |
+| GET | `/api/reservas/minhas` | Reservas do professor autenticado |
+| GET | `/api/reservas/pendentes` | Fila admin |
+| POST | `/api/reservas/:id/aprovar` | Aprova (admin) |
+| POST | `/api/reservas/:id/rejeitar` | Rejeita (admin) |
+| POST | `/api/reservas/:id/cancelar` | Cancela própria (professor) |
 
 As rotas protegidas usam HTTP Basic com o e-mail e a senha da conta. O payload de
 criação contém `idEspaco`, `dataInicio`, `dataFim` e `horarios`, uma lista de objetos
 `{"dia":"SEGUNDA","inicioMin":480,"fimMin":540}`. Os horários são minutos desde
 meia-noite e as datas usam `AAAA-MM-DD`.
+
+Rejeição e cancelamento aceitam `{"motivo":"..."}` opcional. Em conflito de uma reserva
+recorrente, a resposta `409` inclui `codigo: "CONFLITO_HORARIO"` e cada data/faixa em
+`detalhes.conflitos`.
 
 O cadastro público cria somente professores. Contas administrativas devem ser provisionadas
 por um operador confiável para impedir que visitantes criem privilégios administrativos.
@@ -119,9 +141,8 @@ local que ofereça HTTPS. Nunca exponha HTTP Basic diretamente em uma rede.
 
 ## Próximos passos sugeridos
 
-1. Construir as telas do frontend (`frontend/`, base e identidade do CIn já prontas) consumindo os endpoints REST.
-2. Adicionar testes (ex: Catch2/GoogleTest) para `Horario::conflitaCom` e
-   `SistemaDeReservas::verificarDisponibilidade`.
+1. Adicionar testes automatizados de integração para autenticação, persistência e rotas Crow.
+2. Revisar capacidade e equipamentos mockados antes de tratar o catálogo importado como cadastro oficial.
 
 ## Diagrama de classes
 

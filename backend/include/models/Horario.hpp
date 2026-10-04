@@ -4,6 +4,7 @@
 // ==========================================
 // VALUE OBJECT: HORARIO
 // ==========================================
+// Representa um intervalo semanal; os limites sao minutos desde meia-noite.
 class Horario {
 private:
     DiaSemana diaSemana = DiaSemana::SEGUNDA;

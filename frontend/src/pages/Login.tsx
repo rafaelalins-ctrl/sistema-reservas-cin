@@ -7,7 +7,7 @@ import { Campo, Sobrelinha } from '@/components/formulario/Campo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ehErro, mensagemAmigavel, modoSimulado, resetarSimulado, usaSimulado } from '@/lib/api'
-import { CONTAS_TESTE, SENHA_TESTE } from '@/lib/api/simulado/contas'
+import { CONTAS_TESTE, EMAIL_ADMIN_TESTE, SENHA_TESTE } from '@/lib/api/simulado/contas'
 import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
 
@@ -29,10 +29,14 @@ export function Login() {
 
   async function enviar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    await autenticar({ email, senha })
+  }
+
+  async function autenticar(credenciais: { email: string; senha: string }) {
     setErro('')
     setEnviando(true)
     try {
-      await entrar({ email, senha })
+      await entrar(credenciais)
       navegar(destino, { replace: true })
     } catch (e) {
       setErro(mensagemAmigavel(e, { 401: 'E-mail ou senha incorretos.' }))
@@ -95,7 +99,12 @@ export function Login() {
         </Button>
       </form>
 
-      {usaSimulado('auth') && <ContasDeTeste />}
+      {usaSimulado('auth') && (
+        <ContasDeTeste
+          desabilitado={enviando}
+          aoEntrarComoAdmin={() => autenticar({ email: EMAIL_ADMIN_TESTE, senha: SENHA_TESTE })}
+        />
+      )}
       {!usaSimulado('auth') && modoSimulado && (
         <p className="text-xs text-muted-foreground">
           Parte da API está simulada nesta execução (VITE_API_SIMULADA).
@@ -110,7 +119,13 @@ export function Login() {
 }
 
 /** Só no modo simulado: as contas de teste existem apenas em lib/api/simulado/dados.ts. */
-function ContasDeTeste() {
+function ContasDeTeste({
+  desabilitado,
+  aoEntrarComoAdmin,
+}: {
+  desabilitado: boolean
+  aoEntrarComoAdmin: () => Promise<void>
+}) {
   return (
     <aside
       aria-label="Modo simulado"
@@ -129,6 +144,16 @@ function ContasDeTeste() {
           </li>
         ))}
       </ul>
+      <Button
+        type="button"
+        variant="outline"
+        className="self-start"
+        disabled={desabilitado}
+        onClick={() => void aoEntrarComoAdmin()}
+      >
+        <ArrowRightIcon data-icon="inline-start" />
+        Entrar como administradora
+      </Button>
       <Button
         variant="link"
         className="h-auto self-start p-0"

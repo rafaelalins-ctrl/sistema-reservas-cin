@@ -7,9 +7,13 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-    },
+    alias: [
+      {
+        find: /^@\/lib\/api$/,
+        replacement: path.resolve(import.meta.dirname, './src/lib/api/index.ts'),
+      },
+      { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
+    ],
   },
   server: {
     host: '127.0.0.1',

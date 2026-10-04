@@ -44,7 +44,9 @@ CREATE TABLE IF NOT EXISTS reservas (
     data_fim        TEXT NOT NULL,
     status          TEXT NOT NULL CHECK (status IN ('PENDENTE', 'APROVADA', 'REJEITADA', 'CANCELADA')),
     id_professor    INTEGER NOT NULL REFERENCES usuarios(id),
-    id_espaco       INTEGER NOT NULL REFERENCES espacos(id)
+    id_espaco       INTEGER NOT NULL REFERENCES espacos(id),
+    criada_em       TEXT,
+    motivo          TEXT
 );
 
 CREATE TABLE IF NOT EXISTS reserva_horarios (

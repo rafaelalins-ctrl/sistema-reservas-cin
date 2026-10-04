@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { api, type CatalogoEspaco } from '@/lib/api'
+import { api, type CatalogoEspaco } from '@/lib/api.ts'
 import { dataLocal } from '@/lib/reservas'
 
 function normalizarBusca(valor: string) {

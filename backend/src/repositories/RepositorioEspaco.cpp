@@ -20,6 +20,7 @@ std::string juntarSoftwares(const std::vector<std::string>& softwares) {
     return resultado.str();
 }
 
+// No banco, os softwares ficam em uma unica coluna separados por virgula.
 std::vector<std::string> separarSoftwares(const std::string& softwares) {
     std::vector<std::string> resultado;
     std::istringstream entrada(softwares);
@@ -55,6 +56,7 @@ void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
     sqlite3_bind_int(stmt, 8, obj->isEmManutencao());
     sqlite3_bind_text(stmt, 9, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
 
+    // Cada subtipo preenche seus campos e deixa os campos dos outros tipos nulos.
     if (auto sala = std::dynamic_pointer_cast<SalaAula>(obj)) {
         sqlite3_bind_text(stmt, 10, toString(sala->getTipoQuadro()), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 11, sala->isPossuiProjetor());
@@ -173,6 +175,7 @@ void RepositorioEspaco::atualizar(std::shared_ptr<Espaco> obj) {
     sqlite3_bind_int(stmt, 7, obj->isRequerRetiradaChave());
     sqlite3_bind_int(stmt, 8, obj->isEmManutencao());
     sqlite3_bind_text(stmt, 9, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
+    // Mantem no banco apenas os atributos que pertencem ao subtipo do espaco.
     if (auto sala = std::dynamic_pointer_cast<SalaAula>(obj)) {
         sqlite3_bind_text(stmt, 10, toString(sala->getTipoQuadro()), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int(stmt, 11, sala->isPossuiProjetor());

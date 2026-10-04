@@ -11,6 +11,7 @@ std::string textoColuna(sqlite3_stmt* stmt, int coluna) {
     return valor ? reinterpret_cast<const char*>(valor) : "";
 }
 
+// Mantem buscas e cadastros consistentes mesmo se o email vier em outra caixa.
 std::string normalizarEmail(const std::string& email) {
     std::string normalizado = email;
     std::transform(normalizado.begin(), normalizado.end(), normalizado.begin(), [](unsigned char caractere) {
@@ -56,6 +57,17 @@ std::shared_ptr<Usuario> RepositorioUsuario::buscarPorEmail(const std::string& e
     return resultado;
 }
 
+bool RepositorioUsuario::existeAdministrador() const {
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, "SELECT 1 FROM usuarios WHERE tipo = 'ADMINISTRADOR' LIMIT 1;",
+                           -1, &stmt, nullptr) != SQLITE_OK) {
+        throw std::runtime_error(std::string("Erro ao consultar administradores: ") + sqlite3_errmsg(db));
+    }
+    const bool existe = sqlite3_step(stmt) == SQLITE_ROW;
+    sqlite3_finalize(stmt);
+    return existe;
+}
+
 bool RepositorioUsuario::cadastrarProfessor(
     const std::string& nome, const std::string& email,
     const std::string& senhaHash, const std::string& departamento) {
@@ -84,4 +96,32 @@ bool RepositorioUsuario::cadastrarProfessor(
     sqlite3_finalize(stmt);
     if ((codigoErro & 0xff) == SQLITE_CONSTRAINT) return false;
     throw std::runtime_error("Erro ao cadastrar professor: " + mensagem);
+}
+
+bool RepositorioUsuario::cadastrarAdministrador(
+    const std::string& nome, const std::string& email, const std::string& senhaHash) {
+    const char* sql =
+        "INSERT INTO usuarios (nome, email, senha_hash, tipo, departamento) "
+        "VALUES (?, ?, ?, 'ADMINISTRADOR', NULL);";
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        throw std::runtime_error(std::string("Erro ao preparar cadastro de administrador: ") + sqlite3_errmsg(db));
+    }
+
+    const auto emailNormalizado = normalizarEmail(email);
+    sqlite3_bind_text(stmt, 1, nome.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 2, emailNormalizado.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, senhaHash.c_str(), -1, SQLITE_TRANSIENT);
+
+    const int resultado = sqlite3_step(stmt);
+    if (resultado == SQLITE_DONE) {
+        sqlite3_finalize(stmt);
+        return true;
+    }
+
+    const int codigoErro = sqlite3_errcode(db);
+    const std::string mensagem = sqlite3_errmsg(db);
+    sqlite3_finalize(stmt);
+    if ((codigoErro & 0xff) == SQLITE_CONSTRAINT) return false;
+    throw std::runtime_error("Erro ao cadastrar administrador: " + mensagem);
 }

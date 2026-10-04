@@ -170,6 +170,24 @@ build CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioUsuario.cpp.ob
   OBJECT_FILE_DIR = CMakeFiles\sistema_reservas.dir\src\repositories
   TARGET_SUPPORT_DIR = CMakeFiles\sistema_reservas.dir
 
+build CMakeFiles/sistema_reservas.dir/src/routes/ApiHttp.cpp.obj: CXX_COMPILER__sistema_reservas_unscanned_ C$:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/routes/ApiHttp.cpp || cmake_object_order_depends_target_sistema_reservas
+  DEFINES = -DASIO_STANDALONE
+  DEP_FILE = CMakeFiles\sistema_reservas.dir\src\routes\ApiHttp.cpp.obj.d
+  FLAGS = -std=gnu++17
+  INCLUDES = -IC:/Users/rafal/Downloads/sistema-reservas-cin/backend/include -IC:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/_deps/crow-src/include -isystem C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build/asio-source/asio-asio-1-30-2/asio/include -isystem C:/vcpkg/installed/x64-mingw-dynamic/include
+  OBJECT_DIR = CMakeFiles\sistema_reservas.dir
+  OBJECT_FILE_DIR = CMakeFiles\sistema_reservas.dir\src\routes
+  TARGET_SUPPORT_DIR = CMakeFiles\sistema_reservas.dir
+
+build CMakeFiles/sistema_reservas.dir/src/routes/Rotas.cpp.obj: CXX_COMPILER__sistema_reservas_unscanned_ C$:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/routes/Rotas.cpp || cmake_object_order_depends_target_sistema_reservas
+  DEFINES = -DASIO_STANDALONE
+  DEP_FILE = CMakeFiles\sistema_reservas.dir\src\routes\Rotas.cpp.obj.d
+  FLAGS = -std=gnu++17
+  INCLUDES = -IC:/Users/rafal/Downloads/sistema-reservas-cin/backend/include -IC:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/_deps/crow-src/include -isystem C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build/asio-source/asio-asio-1-30-2/asio/include -isystem C:/vcpkg/installed/x64-mingw-dynamic/include
+  OBJECT_DIR = CMakeFiles\sistema_reservas.dir
+  OBJECT_FILE_DIR = CMakeFiles\sistema_reservas.dir\src\routes
+  TARGET_SUPPORT_DIR = CMakeFiles\sistema_reservas.dir
+
 build CMakeFiles/sistema_reservas.dir/src/services/SistemaDeReservas.cpp.obj: CXX_COMPILER__sistema_reservas_unscanned_ C$:/Users/rafal/Downloads/sistema-reservas-cin/backend/src/services/SistemaDeReservas.cpp || cmake_object_order_depends_target_sistema_reservas
   DEFINES = -DASIO_STANDALONE
   DEP_FILE = CMakeFiles\sistema_reservas.dir\src\services\SistemaDeReservas.cpp.obj.d
@@ -187,7 +205,7 @@ build CMakeFiles/sistema_reservas.dir/src/services/SistemaDeReservas.cpp.obj: CX
 #############################################
 # Link the executable sistema_reservas.exe
 
-build sistema_reservas.exe: CXX_EXECUTABLE_LINKER__sistema_reservas_ CMakeFiles/sistema_reservas.dir/src/main.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Administrador.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Auditorio.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Enums.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Espaco.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Horario.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Laboratorio.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Professor.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Reserva.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/SalaAula.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Usuario.cpp.obj CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioEspaco.cpp.obj CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioReserva.cpp.obj CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioUsuario.cpp.obj CMakeFiles/sistema_reservas.dir/src/services/SistemaDeReservas.cpp.obj | C$:/vcpkg/installed/x64-mingw-dynamic/debug/lib/libsqlite3.dll.a C$:/vcpkg/installed/x64-mingw-dynamic/debug/lib/libcrypto.dll.a
+build sistema_reservas.exe: CXX_EXECUTABLE_LINKER__sistema_reservas_ CMakeFiles/sistema_reservas.dir/src/main.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Administrador.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Auditorio.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Enums.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Espaco.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Horario.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Laboratorio.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Professor.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Reserva.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/SalaAula.cpp.obj CMakeFiles/sistema_reservas.dir/src/models/Usuario.cpp.obj CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioEspaco.cpp.obj CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioReserva.cpp.obj CMakeFiles/sistema_reservas.dir/src/repositories/RepositorioUsuario.cpp.obj CMakeFiles/sistema_reservas.dir/src/routes/ApiHttp.cpp.obj CMakeFiles/sistema_reservas.dir/src/routes/Rotas.cpp.obj CMakeFiles/sistema_reservas.dir/src/services/SistemaDeReservas.cpp.obj | C$:/vcpkg/installed/x64-mingw-dynamic/debug/lib/libsqlite3.dll.a C$:/vcpkg/installed/x64-mingw-dynamic/debug/lib/libcrypto.dll.a
   LINK_LIBRARIES = C:/vcpkg/installed/x64-mingw-dynamic/debug/lib/libsqlite3.dll.a  C:/vcpkg/installed/x64-mingw-dynamic/debug/lib/libcrypto.dll.a  -lws2_32  -lmswsock  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\sistema_reservas.dir
   POST_BUILD = C:\WINDOWS\system32\cmd.exe /C "cd /D C:\Users\rafal\Downloads\sistema-reservas-cin\backend\build-mingw && C:\vcpkg\vcpkg.exe z-applocal --target-binary=C:/Users/rafal/Downloads/sistema-reservas-cin/backend/build-mingw/sistema_reservas.exe --installed-bin-dir=C:/vcpkg/installed/x64-mingw-dynamic/bin"

@@ -2,7 +2,7 @@
 // simulada conforme VITE_API_SIMULADA (docs/prd.md, seção 6.2):
 //   VITE_API_SIMULADA=todos               tudo simulado (padrão em `npm run dev`)
 //   VITE_API_SIMULADA=espacos,reservas    autenticação real, o resto simulado
-//   VITE_API_SIMULADA=                    tudo real (padrão no build de produção)
+//   VITE_API_SIMULADA=                    tudo real (padrão em desenvolvimento e produção)
 import { ApiError } from '@/lib/api/erros'
 import { authReal } from '@/lib/api/real/auth'
 import { espacosReal } from '@/lib/api/real/espacos'
@@ -17,7 +17,7 @@ export { ApiError, ehErro, mensagemAmigavel } from '@/lib/api/erros'
 type Recurso = keyof Api
 
 const configuracao: string =
-  import.meta.env.VITE_API_SIMULADA ?? (import.meta.env.DEV ? 'todos' : '')
+  import.meta.env.VITE_API_SIMULADA ?? ''
 const simulados = new Set(
   configuracao
     .split(',')
@@ -31,8 +31,8 @@ export function usaSimulado(recurso: Recurso) {
 
 export const modoSimulado = (['auth', 'espacos', 'reservas'] as Recurso[]).some(usaSimulado)
 
-/** O campo "motivo" só aparece onde a implementação o aceita (P17; a API atual não aceita). */
-export const suportaMotivo = usaSimulado('reservas')
+/** A API real e o simulador aceitam motivo opcional em rejeição e cancelamento. */
+export const suportaMotivo = true
 
 // Carregado sob demanda: o simulado não pesa no bundle de quem usa só a API real.
 const carregarSimulado = () => import('@/lib/api/simulado').then((m) => m.apiSimulada)

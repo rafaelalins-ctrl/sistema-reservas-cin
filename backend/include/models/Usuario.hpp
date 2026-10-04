@@ -6,11 +6,13 @@ class Espaco; // forward declaration
 // ==========================================
 // BLOCO DE USUARIOS (POLIMORFISMO DE AUTORIZACAO)
 // ==========================================
+// Dados e operacoes comuns a professores e administradores.
 class Usuario {
 protected:
     int id = 0;
     std::string nome;
     std::string email;
+    // A senha nunca deve ser guardada em texto puro.
     std::string senhaHash;
 
 public:
@@ -20,6 +22,7 @@ public:
 
     // Autentica comparando a senha informada com o hash armazenado.
     bool fazerLogin(const std::string& emailInformado, const std::string& senha) const;
+    // Gera um hash com salt aleatorio para salvar no banco.
     static std::string gerarHashSenha(const std::string& senha);
 
     // Cada tipo de usuario decide, a sua maneira, se pode reservar um espaco.
