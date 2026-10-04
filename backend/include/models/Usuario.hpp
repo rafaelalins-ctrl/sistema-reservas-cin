@@ -19,8 +19,8 @@ public:
     virtual ~Usuario() = default;
 
     // Autentica comparando a senha informada com o hash armazenado.
-    // TODO: usar uma lib de hashing (ex: bcrypt/argon2) em vez de comparacao direta.
     bool fazerLogin(const std::string& emailInformado, const std::string& senha) const;
+    static std::string gerarHashSenha(const std::string& senha);
 
     // Cada tipo de usuario decide, a sua maneira, se pode reservar um espaco.
     virtual bool validarPermissaoReserva(const Espaco& e) const = 0;

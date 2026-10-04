@@ -40,12 +40,30 @@ frontend/                    # React + Vite + TS, Tailwind v4, shadcn/ui (ver fr
 - Compilador C++17
 - [Crow](https://github.com/CrowCpp/Crow) (baixado automaticamente via `FetchContent`)
 - SQLite3 (`libsqlite3-dev` no Ubuntu/Debian, `sqlite3` no Homebrew)
+- OpenSSL Crypto (`libssl-dev` no Ubuntu/Debian, `openssl` no Homebrew)
 
 ### Ubuntu/Debian
 ```bash
 sudo apt update
-sudo apt install build-essential cmake libsqlite3-dev
+sudo apt install build-essential cmake libsqlite3-dev libssl-dev
 ```
+
+### Windows (vcpkg)
+```powershell
+git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+& C:\vcpkg\bootstrap-vcpkg.bat
+$env:VCPKG_ROOT = "C:\vcpkg"
+& "$env:VCPKG_ROOT\vcpkg.exe" install sqlite3 openssl --triplet x64-mingw-dynamic
+cmake -S backend -B backend/build-mingw `
+   -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+   -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+cmake --build backend/build-mingw
+Push-Location backend/build-mingw
+.\sistema_reservas.exe
+```
+
+Clone e bootstrap do vcpkg são necessários apenas na primeira instalação. Mantenha o terminal
+do executável aberto enquanto usar o frontend; o Vite encaminha `/api` para `127.0.0.1:18080`.
 
 ## Build & Run
 
@@ -56,29 +74,53 @@ cmake --build . -j
 ./sistema_reservas
 ```
 
+### Teste rápido das classes de domínio (MinGW)
+
+Não precisa esperar o vcpkg: na raiz do projeto, rode:
+
+```powershell
+.\backend\tests\run_model_smoke.ps1
+```
+
+Esse teste compila diretamente os modelos de horário, espaço e reserva. Ele não valida SQLite,
+autenticação ou a comunicação HTTP.
+
+As senhas devem ser armazenadas como hashes gerados por `Usuario::gerarHashSenha`,
+no formato `pbkdf2_sha256$iteracoes$salt_base64$hash_base64`. Hashes em texto puro
+ou em formatos desconhecidos sao rejeitados. Use esse metodo em uma ferramenta
+administrativa confiavel ao provisionar usuarios.
+
 O servidor sobe por padrão em `http://localhost:18080`. O arquivo `database/reservas.db`
 é criado/aberto automaticamente a partir do `schema.sql` na primeira execução.
 
-## Endpoints de exemplo (já stubados em `main.cpp`)
+## Endpoints
 
 | Método | Rota                  | Descrição                                |
 |--------|------------------------|-------------------------------------------|
 | GET    | `/api/espacos`          | Lista todos os espaços cadastrados        |
-| GET    | `/api/espacos/disponiveis?dia=&inicio=&fim=&capacidade=` | Lista espaços disponíveis num horário |
-| POST   | `/api/reservas`         | Cria uma nova solicitação de reserva      |
-| POST   | `/api/reservas/:id/aprovar` | Aprova uma reserva (Administrador)   |
+| GET    | `/api/espacos/disponiveis?dia=&inicio=&fim=&data=&capacidade=` | Lista espaços disponíveis numa data e horário |
+| POST   | `/api/auth/register` | Cadastra uma conta de professor |
+| POST   | `/api/auth/login` | Confere e-mail e senha no banco e retorna o perfil |
+| POST   | `/api/reservas`         | Cria uma solicitação (Professor autenticado) |
+| POST   | `/api/reservas/:id/aprovar` | Aprova uma reserva (Administrador) |
+| POST   | `/api/reservas/:id/rejeitar` | Rejeita uma reserva (Administrador) |
+| POST   | `/api/reservas/:id/cancelar` | Cancela uma reserva própria (Professor) |
 
-Esses handlers estão como **esqueleto** — a lógica de parsing de JSON e chamadas ao
-`SistemaDeReservas` deve ser completada conforme o CRUD avança.
+As rotas protegidas usam HTTP Basic com o e-mail e a senha da conta. O payload de
+criação contém `idEspaco`, `dataInicio`, `dataFim` e `horarios`, uma lista de objetos
+`{"dia":"SEGUNDA","inicioMin":480,"fimMin":540}`. Os horários são minutos desde
+meia-noite e as datas usam `AAAA-MM-DD`.
+
+O cadastro público cria somente professores. Contas administrativas devem ser provisionadas
+por um operador confiável para impedir que visitantes criem privilégios administrativos.
+
+O servidor escuta apenas em `127.0.0.1`; em produção, publique-o atrás de um proxy
+local que ofereça HTTPS. Nunca exponha HTTP Basic diretamente em uma rede.
 
 ## Próximos passos sugeridos
 
-1. Completar o parsing/serialização JSON em `main.cpp` (usar `crow::json`).
-2. Implementar a reconstrução polimórfica de `Espaco` em `RepositorioEspaco`
-   (coluna `tipo` na tabela `espacos` já está prevista no `schema.sql`).
-3. Implementar autenticação (hash de senha) em `Usuario::fazerLogin`.
-4. Construir as telas do frontend (`frontend/`, base e identidade do CIn já prontas) consumindo os endpoints REST.
-5. Adicionar testes (ex: Catch2/GoogleTest) para `Horario::conflitaCom` e
+1. Construir as telas do frontend (`frontend/`, base e identidade do CIn já prontas) consumindo os endpoints REST.
+2. Adicionar testes (ex: Catch2/GoogleTest) para `Horario::conflitaCom` e
    `SistemaDeReservas::verificarDisponibilidade`.
 
 ## Diagrama de classes

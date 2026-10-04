@@ -6,7 +6,7 @@
 // ==========================================
 class Horario {
 private:
-    DiaSemana diaSemana;
+    DiaSemana diaSemana = DiaSemana::SEGUNDA;
     int horaInicioMin = 0; // minutos desde 00:00, ex: 8:30 = 510
     int horaFimMin = 0;
 

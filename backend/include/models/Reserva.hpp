@@ -41,4 +41,6 @@ public:
     const std::vector<Horario>& getHorarios() const { return horarios; }
 
     void setId(int novoId) { id = novoId; }
+    void setStatus(StatusReserva novoStatus) { status = novoStatus; }
+    void setHorarios(std::vector<Horario> novosHorarios) { horarios = std::move(novosHorarios); }
 };

@@ -3,19 +3,42 @@
 #include "models/Laboratorio.hpp"
 #include "models/Auditorio.hpp"
 #include <stdexcept>
-#include <iostream>
+#include <sstream>
 
-// NOTE: implementacao de referencia/esqueleto. Os campos especificos de cada
-// subtipo (ex: qtdComputadores, softwaresInstalados) sao persistidos em
-// colunas nullable na mesma tabela 'espacos' (ver database/schema.sql) para
-// manter o exemplo simples; em um projeto maior, prefira tabelas separadas
-// (Table-per-subclass) ou uma coluna JSON para os atributos especificos.
+namespace {
+std::string textoColuna(sqlite3_stmt* stmt, int coluna) {
+    const auto* valor = sqlite3_column_text(stmt, coluna);
+    return valor ? reinterpret_cast<const char*>(valor) : "";
+}
+
+std::string juntarSoftwares(const std::vector<std::string>& softwares) {
+    std::ostringstream resultado;
+    for (std::size_t i = 0; i < softwares.size(); ++i) {
+        if (i > 0) resultado << ',';
+        resultado << softwares[i];
+    }
+    return resultado.str();
+}
+
+std::vector<std::string> separarSoftwares(const std::string& softwares) {
+    std::vector<std::string> resultado;
+    std::istringstream entrada(softwares);
+    std::string software;
+    while (std::getline(entrada, software, ',')) {
+        resultado.push_back(software);
+    }
+    return resultado;
+}
+}
 
 void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
+    if (!obj) throw std::invalid_argument("Espaco nao pode ser nulo.");
+
     const char* sql =
         "INSERT INTO espacos (identificacao, capacidade, bloco, mobilia, qtd_tomadas, "
-        "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+        "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo, tipo_quadro, "
+        "possui_projetor, qtd_computadores, softwares_instalados, equipamento_som, cabine_traducao) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -32,6 +55,33 @@ void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
     sqlite3_bind_int(stmt, 8, obj->isEmManutencao());
     sqlite3_bind_text(stmt, 9, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
 
+    if (auto sala = std::dynamic_pointer_cast<SalaAula>(obj)) {
+        sqlite3_bind_text(stmt, 10, toString(sala->getTipoQuadro()), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 11, sala->isPossuiProjetor());
+        sqlite3_bind_null(stmt, 12);
+        sqlite3_bind_null(stmt, 13);
+        sqlite3_bind_null(stmt, 14);
+        sqlite3_bind_null(stmt, 15);
+    } else if (auto laboratorio = std::dynamic_pointer_cast<Laboratorio>(obj)) {
+        sqlite3_bind_null(stmt, 10);
+        sqlite3_bind_null(stmt, 11);
+        sqlite3_bind_int(stmt, 12, laboratorio->getQtdComputadores());
+        const std::string softwares = juntarSoftwares(laboratorio->getSoftwaresInstalados());
+        sqlite3_bind_text(stmt, 13, softwares.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_null(stmt, 14);
+        sqlite3_bind_null(stmt, 15);
+    } else if (auto auditorio = std::dynamic_pointer_cast<Auditorio>(obj)) {
+        sqlite3_bind_null(stmt, 10);
+        sqlite3_bind_null(stmt, 11);
+        sqlite3_bind_null(stmt, 12);
+        sqlite3_bind_null(stmt, 13);
+        sqlite3_bind_int(stmt, 14, auditorio->isEquipamentoSom());
+        sqlite3_bind_int(stmt, 15, auditorio->isCabineTraducao());
+    } else {
+        sqlite3_finalize(stmt);
+        throw std::invalid_argument("Tipo concreto de espaco nao suportado.");
+    }
+
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         sqlite3_finalize(stmt);
         throw std::runtime_error(std::string("Erro ao inserir espaco: ") + sqlite3_errmsg(db));
@@ -40,36 +90,41 @@ void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
     obj->setId(static_cast<int>(sqlite3_last_insert_rowid(db)));
     sqlite3_finalize(stmt);
 
-    // TODO: persistir campos especificos do subtipo (qtdComputadores, tipoQuadro, etc).
 }
 
 std::shared_ptr<Espaco> RepositorioEspaco::mapearLinha(sqlite3_stmt* stmt) const {
     int id = sqlite3_column_int(stmt, 0);
-    std::string identificacao = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+    std::string identificacao = textoColuna(stmt, 1);
     int capacidade = sqlite3_column_int(stmt, 2);
-    BlocoCIn bloco = blocoFromString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3)));
-    TipoMobilia mobilia = tipoMobiliaFromString(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 4)));
+    BlocoCIn bloco = blocoFromString(textoColuna(stmt, 3));
+    TipoMobilia mobilia = tipoMobiliaFromString(textoColuna(stmt, 4));
     int qtdTomadas = sqlite3_column_int(stmt, 5);
     bool acessivel = sqlite3_column_int(stmt, 6) != 0;
     bool requerChave = sqlite3_column_int(stmt, 7) != 0;
     bool manutencao = sqlite3_column_int(stmt, 8) != 0;
-    std::string tipo = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+    std::string tipo = textoColuna(stmt, 9);
 
-    // TODO: ler colunas especificas de cada subtipo e repassar aos construtores abaixo.
     if (tipo == "SALA_AULA") {
+        const auto tipoQuadro = sqlite3_column_type(stmt, 10) == SQLITE_NULL
+            ? TipoQuadro::BRANCO : tipoQuadroFromString(textoColuna(stmt, 10));
+        const bool possuiProjetor = sqlite3_column_int(stmt, 11) != 0;
         return std::make_shared<SalaAula>(id, identificacao, capacidade, bloco, mobilia,
                                            qtdTomadas, acessivel, requerChave, manutencao,
-                                           TipoQuadro::BRANCO, false);
+                                           tipoQuadro, possuiProjetor);
     }
     if (tipo == "LABORATORIO") {
+        const int qtdComputadores = sqlite3_column_int(stmt, 12);
+        const auto softwares = separarSoftwares(textoColuna(stmt, 13));
         return std::make_shared<Laboratorio>(id, identificacao, capacidade, bloco, mobilia,
                                               qtdTomadas, acessivel, requerChave, manutencao,
-                                              0, std::vector<std::string>{});
+                                              qtdComputadores, softwares);
     }
     if (tipo == "AUDITORIO") {
+        const bool equipamentoSom = sqlite3_column_int(stmt, 14) != 0;
+        const bool cabineTraducao = sqlite3_column_int(stmt, 15) != 0;
         return std::make_shared<Auditorio>(id, identificacao, capacidade, bloco, mobilia,
                                             qtdTomadas, acessivel, requerChave, manutencao,
-                                            false, false);
+                                            equipamentoSom, cabineTraducao);
     }
     throw std::runtime_error("Tipo de espaco desconhecido no banco: " + tipo);
 }
@@ -77,7 +132,8 @@ std::shared_ptr<Espaco> RepositorioEspaco::mapearLinha(sqlite3_stmt* stmt) const
 std::shared_ptr<Espaco> RepositorioEspaco::buscar(int id) {
     const char* sql =
         "SELECT id, identificacao, capacidade, bloco, mobilia, qtd_tomadas, "
-        "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo "
+        "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo, tipo_quadro, "
+        "possui_projetor, qtd_computadores, softwares_instalados, equipamento_som, cabine_traducao "
         "FROM espacos WHERE id = ?;";
 
     sqlite3_stmt* stmt = nullptr;
@@ -95,10 +151,13 @@ std::shared_ptr<Espaco> RepositorioEspaco::buscar(int id) {
 }
 
 void RepositorioEspaco::atualizar(std::shared_ptr<Espaco> obj) {
+    if (!obj) throw std::invalid_argument("Espaco nao pode ser nulo.");
+
     const char* sql =
         "UPDATE espacos SET identificacao=?, capacidade=?, bloco=?, mobilia=?, "
-        "qtd_tomadas=?, acessivel_cadeirante=?, requer_retirada_chave=?, em_manutencao=? "
-        "WHERE id=?;";
+        "qtd_tomadas=?, acessivel_cadeirante=?, requer_retirada_chave=?, em_manutencao=?, "
+        "tipo=?, tipo_quadro=?, possui_projetor=?, qtd_computadores=?, softwares_instalados=?, "
+        "equipamento_som=?, cabine_traducao=? WHERE id=?;";
 
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -113,7 +172,34 @@ void RepositorioEspaco::atualizar(std::shared_ptr<Espaco> obj) {
     sqlite3_bind_int(stmt, 6, obj->isAcessivelCadeirante());
     sqlite3_bind_int(stmt, 7, obj->isRequerRetiradaChave());
     sqlite3_bind_int(stmt, 8, obj->isEmManutencao());
-    sqlite3_bind_int(stmt, 9, obj->getId());
+    sqlite3_bind_text(stmt, 9, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
+    if (auto sala = std::dynamic_pointer_cast<SalaAula>(obj)) {
+        sqlite3_bind_text(stmt, 10, toString(sala->getTipoQuadro()), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int(stmt, 11, sala->isPossuiProjetor());
+        sqlite3_bind_null(stmt, 12);
+        sqlite3_bind_null(stmt, 13);
+        sqlite3_bind_null(stmt, 14);
+        sqlite3_bind_null(stmt, 15);
+    } else if (auto laboratorio = std::dynamic_pointer_cast<Laboratorio>(obj)) {
+        sqlite3_bind_null(stmt, 10);
+        sqlite3_bind_null(stmt, 11);
+        sqlite3_bind_int(stmt, 12, laboratorio->getQtdComputadores());
+        const std::string softwares = juntarSoftwares(laboratorio->getSoftwaresInstalados());
+        sqlite3_bind_text(stmt, 13, softwares.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_null(stmt, 14);
+        sqlite3_bind_null(stmt, 15);
+    } else if (auto auditorio = std::dynamic_pointer_cast<Auditorio>(obj)) {
+        sqlite3_bind_null(stmt, 10);
+        sqlite3_bind_null(stmt, 11);
+        sqlite3_bind_null(stmt, 12);
+        sqlite3_bind_null(stmt, 13);
+        sqlite3_bind_int(stmt, 14, auditorio->isEquipamentoSom());
+        sqlite3_bind_int(stmt, 15, auditorio->isCabineTraducao());
+    } else {
+        sqlite3_finalize(stmt);
+        throw std::invalid_argument("Tipo concreto de espaco nao suportado.");
+    }
+    sqlite3_bind_int(stmt, 16, obj->getId());
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         sqlite3_finalize(stmt);
@@ -139,7 +225,9 @@ void RepositorioEspaco::remover(int id) {
 std::vector<std::shared_ptr<Espaco>> RepositorioEspaco::listarTodos() {
     const char* sql =
         "SELECT id, identificacao, capacidade, bloco, mobilia, qtd_tomadas, "
-        "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo FROM espacos;";
+        "acessivel_cadeirante, requer_retirada_chave, em_manutencao, tipo, tipo_quadro, "
+        "possui_projetor, qtd_computadores, softwares_instalados, equipamento_som, cabine_traducao "
+        "FROM espacos;";
 
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
