@@ -209,18 +209,6 @@ ResultadoRemocaoUsuario SistemaDeReservas::removerUsuario(int idUsuario) {
     return ResultadoRemocaoUsuario::REMOVIDO;
 }
 
-// Revalida os novos horarios ignorando a propria reserva, para ela nao conflitar consigo.
-bool SistemaDeReservas::alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios) {
-    auto reserva = repoReservas.buscar(idReserva);
-    if (!reserva || !reserva->getEspaco() ||
-        !horariosDisponiveis(*reserva->getEspaco(), novosHorarios,
-                             reserva->getDataInicio(), reserva->getDataFim(), idReserva)) return false;
-
-    repoReservas.atualizarHorarios(idReserva, novosHorarios);
-    reserva->setHorarios(std::move(novosHorarios));
-    return true;
-}
-
 bool SistemaDeReservas::aprovarReserva(int idReserva) {
     return repoReservas.atualizarStatusPendente(idReserva, StatusReserva::APROVADA);
 }

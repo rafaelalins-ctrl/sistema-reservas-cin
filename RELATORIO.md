@@ -151,7 +151,7 @@ e `-->` e associacao.
 Cada conceito do dominio virou uma classe com estado privado e uma interface publica pequena.
 `Reserva` (`include/models/Reserva.hpp`) guarda datas, status, solicitante, espaco e horarios
 como `private`; o resto do sistema le por getters `const` e altera por metodos especificos
-(`aprovar`, `rejeitar`, `cancelar`, `setHorarios`...), nunca mexendo direto nos atributos.
+(`aprovar`, `rejeitar`, `cancelar`, `setMotivo`...), nunca mexendo direto nos atributos.
 
 O encapsulamento tambem protege invariantes:
 

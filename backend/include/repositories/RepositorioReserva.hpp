@@ -21,8 +21,6 @@ public:
     std::shared_ptr<Reserva> buscar(int id) override;
     // Grava status e motivo. Datas, espaco e professor nao mudam depois de criada.
     void atualizar(std::shared_ptr<Reserva> obj) override;
-    // Troca todos os horarios semanais numa transacao.
-    void atualizarHorarios(int idReserva, const std::vector<Horario>& horarios);
     // So altera o estado se a reserva ainda estiver pendente.
     bool atualizarStatusPendente(int id, StatusReserva status, const std::string& motivo = "");
     // Cancela somente reservas do professor que ainda nao terminaram.

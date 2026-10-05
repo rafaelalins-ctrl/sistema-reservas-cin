@@ -95,9 +95,6 @@ public:
     // Exige a trava do banco (travarBanco) ja adquirida pelo chamador.
     ResultadoRemocaoUsuario removerUsuario(int idUsuario);
 
-    // Substitui os horarios de uma reserva existente, revalidando conflitos.
-    bool alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios);
-
     // Retornam false se a reserva nao existir ou nao estiver num status que permita a acao.
     bool aprovarReserva(int idReserva);
     bool rejeitarReserva(int idReserva, const std::string& motivo = "");

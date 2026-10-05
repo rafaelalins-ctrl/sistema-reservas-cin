@@ -53,5 +53,4 @@ public:
     void setCriadaEm(std::string valor) { criadaEm = std::move(valor); }
     void setMotivo(std::string valor) { motivo = std::move(valor); }
     void setStatus(StatusReserva novoStatus) { status = novoStatus; }
-    void setHorarios(std::vector<Horario> novosHorarios) { horarios = std::move(novosHorarios); }
 };

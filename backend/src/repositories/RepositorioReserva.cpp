@@ -292,7 +292,7 @@ std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarTodos() {
 }
 
 // Datas ISO (AAAA-MM-DD) comparadas como texto ficam na ordem cronologica.
-// idReservaIgnorada exclui a propria reserva ao revalidar uma alteracao.
+// idReservaIgnorada (se > 0) deixa uma reserva de fora da consulta.
 std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarPorEspacoEData(
         int idEspaco, const std::string& data, int idReservaIgnorada) {
         const char* sql = idReservaIgnorada > 0
@@ -322,29 +322,4 @@ std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarPorEspacoEData(
     }
     sqlite3_finalize(stmt);
     return resultado;
-}
-
-// Apaga os horarios antigos e insere os novos; a transacao evita ficar sem nenhum.
-void RepositorioReserva::atualizarHorarios(int idReserva, const std::vector<Horario>& horarios) {
-    executarSql(db, "BEGIN IMMEDIATE TRANSACTION;", "Erro ao iniciar alteracao de horarios: ");
-    try {
-        sqlite3_stmt* stmt = nullptr;
-        if (sqlite3_prepare_v2(db, "DELETE FROM reserva_horarios WHERE id_reserva = ?;", -1,
-                               &stmt, nullptr) != SQLITE_OK) {
-            throw std::runtime_error(std::string("Erro ao preparar remocao de horarios: ") + sqlite3_errmsg(db));
-        }
-        sqlite3_bind_int(stmt, 1, idReserva);
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
-            const std::string mensagem = sqlite3_errmsg(db);
-            sqlite3_finalize(stmt);
-            throw std::runtime_error("Erro ao remover horarios antigos: " + mensagem);
-        }
-        sqlite3_finalize(stmt);
-
-        inserirHorarios(db, idReserva, horarios);
-        executarSql(db, "COMMIT;", "Erro ao confirmar alteracao de horarios: ");
-    } catch (...) {
-        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
-        throw;
-    }
 }
