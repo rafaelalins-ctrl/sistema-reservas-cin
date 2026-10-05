@@ -267,7 +267,7 @@ classDiagram
     direction TB
 
     class Usuario {
-        &lt;&lt;abstract&gt;&gt;
+        <<abstract>>
         #int id
         #string nome
         #string email
@@ -290,11 +290,11 @@ classDiagram
         +aprovarReserva(SistemaDeReservas, id) bool
         +rejeitarReserva(SistemaDeReservas, id, motivo) bool
     }
-    Usuario &lt;|-- Professor
-    Usuario &lt;|-- Administrador
+    Usuario <|-- Professor
+    Usuario <|-- Administrador
 
     class Espaco {
-        &lt;&lt;abstract&gt;&gt;
+        <<abstract>>
         #int id
         #string identificacao
         #int capacidade
@@ -315,9 +315,9 @@ classDiagram
         -bool equipamentoSom
         -bool cabineTraducao
     }
-    Espaco &lt;|-- SalaAula
-    Espaco &lt;|-- Laboratorio
-    Espaco &lt;|-- Auditorio
+    Espaco <|-- SalaAula
+    Espaco <|-- Laboratorio
+    Espaco <|-- Auditorio
 
     class Reserva {
         -int id
@@ -334,12 +334,12 @@ classDiagram
         -int horaFimMin
         +conflitaCom(Horario) bool
     }
-    Reserva --&gt; &quot;1&quot; Professor : solicitante
-    Reserva --&gt; &quot;1&quot; Espaco : espaco
-    Reserva *-- &quot;1..*&quot; Horario : horarios
+    Reserva --> "1" Professor : solicitante
+    Reserva --> "1" Espaco : espaco
+    Reserva *-- "1..*" Horario : horarios
 
     class IRepositorio~T~ {
-        &lt;&lt;interface&gt;&gt;
+        <<interface>>
         +salvar(T)*
         +buscar(id) T*
         +atualizar(T)*
@@ -349,10 +349,10 @@ classDiagram
     class RepositorioEspaco
     class RepositorioReserva
     class RepositorioUsuario
-    IRepositorio &lt;|.. RepositorioEspaco : T = Espaco
-    IRepositorio &lt;|.. RepositorioReserva : T = Reserva
-    IRepositorio &lt;|.. RepositorioUsuario : T = Usuario
-    RepositorioReserva --&gt; RepositorioEspaco : usa
+    IRepositorio <|.. RepositorioEspaco : T = Espaco
+    IRepositorio <|.. RepositorioReserva : T = Reserva
+    IRepositorio <|.. RepositorioUsuario : T = Usuario
+    RepositorioReserva --> RepositorioEspaco : usa
 
     class SistemaDeReservas {
         +processarNovaReserva(Reserva) bool
@@ -366,8 +366,7 @@ classDiagram
     SistemaDeReservas *-- RepositorioEspaco
     SistemaDeReservas *-- RepositorioReserva
     SistemaDeReservas *-- RepositorioUsuario
-</pre
-            >
+</pre>
           </div>
         </div>
       </section>
@@ -414,10 +413,9 @@ classDiagram
             código.
           </p>
           <div class="video">
-            <!-- TODO: trocar este bloco pelo iframe do YouTube:
-                 <iframe src="https://www.youtube-nocookie.com/embed/ID_DO_VIDEO"
-                   title="Vídeo do projeto" allowfullscreen loading="lazy"></iframe> -->
-            <div class="pendente">TODO: link do vídeo no YouTube</div>
+            <div class="pendente">
+              Demonstração em vídeo (em breve)
+            </div>
           </div>
         </div>
       </section>
@@ -429,11 +427,22 @@ classDiagram
             Projeto prático da disciplina CIN0135, ministrada pelo prof. Francisco Simões no CIn-UFPE.
           </p>
           <div class="grade">
-            <!-- TODO: preencher nome, e-mail e o que cada pessoa fez. -->
-            <article class="cartao"><h3>TODO: integrante 1</h3><p>Contribuição</p></article>
-            <article class="cartao"><h3>TODO: integrante 2</h3><p>Contribuição</p></article>
-            <article class="cartao"><h3>TODO: integrante 3</h3><p>Contribuição</p></article>
-            <article class="cartao"><h3>TODO: integrante 4</h3><p>Contribuição</p></article>
+            <article class="cartao">
+              <h3>Rafaela Lins</h3>
+              <p>Desenvolvimento Backend em C++, modelagem do banco SQLite e documentação.</p>
+            </article>
+            <article class="cartao">
+              <h3>Rafael Samico</h3>
+              <p>Desenvolvimento Frontend em React e integração de telas com a API REST.</p>
+            </article>
+            <article class="cartao">
+              <h3>Valquiria Silva</h3>
+              <p>Estruturas de Dados Orientadas a Objetos e regras de disponibilidade.</p>
+            </article>
+            <article class="cartao">
+              <h3>Alanny Vitória</h3>
+              <p>Elaboração do relatório técnico e produção do vídeo de demonstração.</p>
+            </article>
           </div>
         </div>
       </section>
