@@ -149,6 +149,7 @@ local que ofereça HTTPS. Nunca exponha HTTP Basic diretamente em uma rede.
 
 ## Diagrama de classes
 
-O modelo de domínio segue o diagrama fornecido: heranças `Usuario` → `Administrador`/`Professor`,
-`Espaco` → `SalaAula`/`Laboratorio`/`Auditorio`, padrão Repository com `IRepositorio<T>`,
-e `SistemaDeReservas` como orquestrador.
+O modelo de domínio tem heranças `Usuario` → `Administrador`/`Professor` e
+`Espaco` → `SalaAula`/`Laboratorio`/`Auditorio`, padrão Repository com `IRepositorio<T>`
+e `SistemaDeReservas` como orquestrador. O diagrama completo e a explicação dos conceitos de POO
+estão na seção 4 do [RELATORIO.md](RELATORIO.md).
