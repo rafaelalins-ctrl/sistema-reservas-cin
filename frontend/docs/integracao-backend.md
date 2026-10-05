@@ -43,6 +43,8 @@ O simulado é um chunk separado, carregado sob demanda: quem usa só a API real 
 | ----------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
 | `auth.cadastrar(dados)`             | `POST /auth/register`                                                                           | implementado                                             |
 | `auth.entrar(credenciais)`          | `POST /auth/login` (Basic)                                                                      | implementado; retorna `id` e departamento                |
+| `auth.atualizarConta(dados)`        | `PUT /usuarios/me`                                                                              | implementado; senha opcional, e-mail não muda            |
+| `auth.excluirConta()`               | `DELETE /usuarios/me`                                                                           | implementado; `409 USUARIO_COM_RESERVAS`, admin `403`    |
 | `espacos.listar(filtros)`           | `GET /espacos?tipo=&bloco=&capacidadeMin=&acessivel=`                                           | implementado; retorna atributos completos                |
 | `espacos.obter(id)`                 | `GET /espacos/:id`                                                                              | implementado                                             |
 | `espacos.disponiveis(filtros)`      | `GET /espacos/disponiveis?data=&inicio=&fim=&capacidadeMin=&tipo=&acessivel=`                   | implementado; aceita também `dia` e `capacidade` legados |

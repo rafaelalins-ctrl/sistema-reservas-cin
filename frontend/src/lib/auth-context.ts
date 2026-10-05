@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-import type { Credenciais, Usuario } from '@/lib/api'
+import type { AtualizacaoConta, Credenciais, Usuario } from '@/lib/api'
 
 export type Sessao = { usuario: Usuario }
 
@@ -9,6 +9,10 @@ export type AuthContextValue = {
   /** Autentica e devolve o usuário; o perfil vem da API, o login não pergunta. */
   entrar: (credenciais: Credenciais) => Promise<Usuario>
   sair: () => void
+  /** Salva a própria conta e atualiza a sessão; com senha nova, passa a usá-la nas chamadas. */
+  atualizarConta: (dados: AtualizacaoConta) => Promise<Usuario>
+  /** Exclui a própria conta e encerra a sessão. */
+  excluirConta: () => Promise<void>
   /** true quando a sessão terminou por um 401 (e não por "Sair"). Zera ao entrar de novo. */
   expirou: boolean
 }

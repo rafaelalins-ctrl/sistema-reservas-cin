@@ -27,4 +27,13 @@ export const authReal: ApiAuth = {
     })
     return adaptarUsuario(resposta)
   },
+
+  async atualizarConta(dados) {
+    const resposta = await request<RespostaLogin>('/usuarios/me', { method: 'PUT', corpo: dados })
+    return adaptarUsuario(resposta)
+  },
+
+  async excluirConta() {
+    await request('/usuarios/me', { method: 'DELETE' })
+  },
 }

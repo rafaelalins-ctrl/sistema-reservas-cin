@@ -26,6 +26,13 @@ export type CadastroProfessor = {
   departamento: string
 }
 
+/** Edição da própria conta. Departamento só vale para professor; senha vazia mantém a atual. */
+export type AtualizacaoConta = {
+  nome: string
+  departamento?: string
+  senha?: string
+}
+
 export type EspacoBase = {
   id: number
   identificacao: string
@@ -130,6 +137,8 @@ export type CodigoErro =
   | 'STATUS_INVALIDO'
   | 'IDENTIFICACAO_DUPLICADA'
   | 'ESPACO_COM_RESERVAS'
+  | 'USUARIO_NAO_ENCONTRADO'
+  | 'USUARIO_COM_RESERVAS'
 
 export type ErroApi = {
   mensagem: string
@@ -142,6 +151,9 @@ export type ErroApi = {
 export type ApiAuth = {
   cadastrar(dados: CadastroProfessor): Promise<void>
   entrar(credenciais: Credenciais): Promise<Usuario>
+  atualizarConta(dados: AtualizacaoConta): Promise<Usuario>
+  /** Só professores sem reservas; o administrador recebe 403. */
+  excluirConta(): Promise<void>
 }
 
 export type ApiEspacos = {

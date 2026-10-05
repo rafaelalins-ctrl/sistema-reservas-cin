@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState, type PropsWithChildren } from 'react'
 
-import { api, usaSimulado, type Credenciais, type Usuario } from '@/lib/api'
-import { aoExpirarSessao, encerrarSessao, iniciarSessao } from '@/lib/api/sessao'
+import { api, usaSimulado, type AtualizacaoConta, type Credenciais, type Usuario } from '@/lib/api'
+import {
+  aoExpirarSessao,
+  atualizarUsuarioSessao,
+  encerrarSessao,
+  iniciarSessao,
+} from '@/lib/api/sessao'
 import { AuthContext, type Sessao } from '@/lib/auth-context'
 
 // P3: com a API real (HTTP Basic), a senha fica só em memória e o login se perde ao recarregar.
@@ -53,6 +58,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSessao(null)
   }, [])
 
+  const atualizarConta = useCallback(async (dados: AtualizacaoConta): Promise<Usuario> => {
+    const usuario = await api.auth.atualizarConta(dados)
+    // Com HTTP Basic a senha vai em toda chamada: sem trocar a credencial, a próxima daria 401.
+    if (dados.senha) iniciarSessao(usuario, { email: usuario.email, senha: dados.senha })
+    else atualizarUsuarioSessao(usuario)
+    const nova = { usuario }
+    salvarSessao(nova)
+    setSessao(nova)
+    return usuario
+  }, [])
+
+  const excluirConta = useCallback(async () => {
+    await api.auth.excluirConta()
+    sair()
+  }, [sair])
+
   useEffect(
     () =>
       aoExpirarSessao(() => {
@@ -63,7 +84,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   )
 
   return (
-    <AuthContext.Provider value={{ sessao, entrar, sair, expirou }}>
+    <AuthContext.Provider value={{ sessao, entrar, sair, expirou, atualizarConta, excluirConta }}>
       {children}
     </AuthContext.Provider>
   )

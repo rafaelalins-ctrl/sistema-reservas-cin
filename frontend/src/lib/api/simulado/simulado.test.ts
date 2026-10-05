@@ -70,6 +70,62 @@ describe('autenticação', () => {
   })
 })
 
+describe('minha conta', () => {
+  it('atualiza nome e senha; a senha antiga deixa de valer', async () => {
+    await professora()
+    const atualizado = await api.auth.atualizarConta({
+      nome: '  Ana S. Souza ',
+      departamento: 'Sistemas de Informação',
+      senha: 'senha-nova-123',
+    })
+    expect(atualizado.nome).toBe('Ana S. Souza')
+    expect(atualizado.departamento).toBe('Sistemas de Informação')
+    expect(atualizado).not.toHaveProperty('senha')
+
+    const antiga = await falha(
+      api.auth.entrar({ email: 'ana.souza@cin.ufpe.br', senha: SENHA_TESTE }),
+    )
+    expect(antiga.status).toBe(401)
+    const nova = await api.auth.entrar({ email: 'ana.souza@cin.ufpe.br', senha: 'senha-nova-123' })
+    expect(nova.nome).toBe('Ana S. Souza')
+  })
+
+  it('professor precisa de departamento; senha curta é recusada', async () => {
+    await professora()
+    const semDepartamento = await falha(api.auth.atualizarConta({ nome: 'Ana', departamento: ' ' }))
+    expect(semDepartamento.campo).toBe('departamento')
+    const senhaCurta = await falha(
+      api.auth.atualizarConta({ nome: 'Ana', departamento: 'CC', senha: '123' }),
+    )
+    expect(senhaCurta.campo).toBe('senha')
+  })
+
+  it('bloqueia exclusão de quem tem reservas e de administrador', async () => {
+    await professora()
+    const comReservas = await falha(api.auth.excluirConta())
+    expect(comReservas.status).toBe(409)
+    expect(comReservas.codigo).toBe('USUARIO_COM_RESERVAS')
+
+    await admin()
+    const doAdmin = await falha(api.auth.excluirConta())
+    expect(doAdmin.status).toBe(403)
+  })
+
+  it('exclui conta sem reservas', async () => {
+    const dados = {
+      nome: 'Carla',
+      email: 'carla@cin.ufpe.br',
+      senha: '12345678',
+      departamento: 'CC',
+    }
+    await api.auth.cadastrar(dados)
+    iniciarSessao(await api.auth.entrar(dados), null)
+    await api.auth.excluirConta()
+    const erro = await falha(api.auth.entrar(dados))
+    expect(erro.status).toBe(401)
+  })
+})
+
 describe('reservas', () => {
   it('cria pendente e bloqueia o horário para outro pedido', async () => {
     await professora()

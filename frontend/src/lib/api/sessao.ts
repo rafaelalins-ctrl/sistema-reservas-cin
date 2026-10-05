@@ -10,6 +10,11 @@ export function iniciarSessao(usuario: Usuario, credenciais: Credenciais | null)
   definirCredenciais(credenciais)
 }
 
+/** Troca os dados do usuário logado sem mexer na credencial (ex.: depois de editar o nome). */
+export function atualizarUsuarioSessao(usuario: Usuario) {
+  atual = usuario
+}
+
 export function encerrarSessao() {
   atual = null
   definirCredenciais(null)
