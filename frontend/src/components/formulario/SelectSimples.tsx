@@ -32,11 +32,7 @@ export function SelectSimples<V extends string>({
   desabilitado?: boolean
 }) {
   return (
-    <Select
-      value={valor}
-      onValueChange={(v) => aoMudar(v as V)}
-      disabled={desabilitado}
-    >
+    <Select value={valor} onValueChange={(v) => aoMudar(v as V)} disabled={desabilitado}>
       <SelectTrigger {...acessiveis} className={cn('h-10 w-full', className)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
