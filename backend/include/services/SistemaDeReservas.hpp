@@ -20,6 +20,13 @@ struct ConflitoReserva {
     int fimMin;
 };
 
+enum class ResultadoRemocaoUsuario {
+    REMOVIDO,
+    NAO_ENCONTRADO,
+    ADMINISTRADOR,   // Contas de administrador nao sao removidas pela API.
+    POSSUI_RESERVAS  // Reservas guardam o historico do professor.
+};
+
 // ==========================================
 // CLASSE ORQUESTRADORA (conecta as rotas do Crow ao dominio/persistencia)
 // ==========================================
@@ -73,6 +80,12 @@ public:
     std::shared_ptr<Usuario> autenticarUsuario(const std::string& email, const std::string& senha);
     bool cadastrarProfessor(const std::string& nome, const std::string& email,
                             const std::string& senha, const std::string& departamento);
+    // Altera nome, departamento (so professores) e, se novaSenha nao for vazia, a senha.
+    // Trava o banco sozinho, como cadastrarProfessor. Retorna false se o usuario nao existir.
+    bool atualizarUsuario(int idUsuario, const std::string& nome,
+                          const std::string& departamento, const std::string& novaSenha);
+    // Exige a trava do banco (travarBanco) ja adquirida pelo chamador.
+    ResultadoRemocaoUsuario removerUsuario(int idUsuario);
 
     // Substitui os horarios de uma reserva existente, revalidando conflitos.
     bool alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios);
@@ -85,4 +98,5 @@ public:
 
     RepositorioEspaco& getRepositorioEspacos() { return repoEspacos; }
     RepositorioReserva& getRepositorioReservas() { return repoReservas; }
+    RepositorioUsuario& getRepositorioUsuarios() { return repoUsuarios; }
 };

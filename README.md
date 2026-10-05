@@ -117,6 +117,9 @@ administrador. Não há senha administrativa padrão.
 | GET | `/api/catalogo/espacos` | Catálogo CIn completo, incluindo espaços não reserváveis |
 | POST | `/api/auth/register` | Cadastra professor |
 | POST | `/api/auth/login` | Autentica via HTTP Basic |
+| GET/PUT/DELETE | `/api/usuarios/me` | Consulta, edita (nome, departamento, senha) ou remove a própria conta |
+| GET | `/api/usuarios` | Lista usuários (admin) |
+| GET/DELETE | `/api/usuarios/:id` | Consulta ou remove conta de professor (admin) |
 | GET/POST | `/api/reservas` | Lista paginada (admin) e cria solicitação (professor) |
 | GET | `/api/reservas/minhas` | Reservas do professor autenticado |
 | GET | `/api/reservas/pendentes` | Fila admin |

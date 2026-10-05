@@ -365,6 +365,34 @@ static void semearEspacosMock(SistemaDeReservas& sistema, sqlite3* catalogoDb) {
     std::cout << carregados << " espacos reservaveis mock carregados do catalogo CIn.\n";
 }
 
+// Dados publicos da conta; o hash da senha nunca sai na resposta.
+static crow::json::wvalue serializarUsuario(const std::shared_ptr<Usuario>& usuario) {
+    crow::json::wvalue item;
+    item["id"] = usuario->getId();
+    item["nome"] = usuario->getNome();
+    item["email"] = usuario->getEmail();
+    item["tipo"] = usuario->tipo();
+    if (auto professor = std::dynamic_pointer_cast<Professor>(usuario)) {
+        item["departamento"] = professor->getDepartamento();
+    }
+    return item;
+}
+
+static crow::response respostaRemocaoUsuario(ResultadoRemocaoUsuario resultado) {
+    switch (resultado) {
+    case ResultadoRemocaoUsuario::REMOVIDO:
+        return crow::response(204);
+    case ResultadoRemocaoUsuario::NAO_ENCONTRADO:
+        return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+    case ResultadoRemocaoUsuario::ADMINISTRADOR:
+        return respostaErro(403, "SEM_PERMISSAO", "Contas de administrador nao podem ser removidas.");
+    case ResultadoRemocaoUsuario::POSSUI_RESERVAS:
+        return respostaErro(409, "USUARIO_COM_RESERVAS",
+                            "A conta possui reservas vinculadas e nao pode ser removida.");
+    }
+    return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover o usuario.");
+}
+
 static crow::json::wvalue serializarReserva(const std::shared_ptr<Reserva>& reserva) {
     crow::json::wvalue item;
     item["id"] = reserva->getId();
@@ -833,18 +861,119 @@ int main() {
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
         if (!usuario) return respostaNaoAutorizada();
+        return crow::response(serializarUsuario(usuario));
+    });
 
-        crow::json::wvalue resposta;
-        resposta["id"] = usuario->getId();
-        resposta["nome"] = usuario->getNome();
-        resposta["email"] = usuario->getEmail();
-        if (auto professor = std::dynamic_pointer_cast<Professor>(usuario)) {
-            resposta["tipo"] = "PROFESSOR";
-            resposta["departamento"] = professor->getDepartamento();
-        } else {
-            resposta["tipo"] = "ADMINISTRADOR";
+    // ---------------------------------------------
+    // CRUD de usuarios: cada um gerencia a propria conta em /me;
+    // o administrador consulta e remove contas de professores.
+    // ---------------------------------------------
+    CROW_ROUTE(app, "/api/usuarios/me").methods(crow::HTTPMethod::GET)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        return crow::response(serializarUsuario(usuario));
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/me").methods(crow::HTTPMethod::PUT)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+
+        auto body = crow::json::load(req.body);
+        const bool ehProfessor = static_cast<bool>(std::dynamic_pointer_cast<Professor>(usuario));
+        if (!body || body.t() != crow::json::type::Object ||
+            !body.has("nome") || body["nome"].t() != crow::json::type::String ||
+            (ehProfessor && (!body.has("departamento") ||
+                             body["departamento"].t() != crow::json::type::String)) ||
+            (body.has("senha") && body["senha"].t() != crow::json::type::String)) {
+            return respostaErro(400, "VALIDACAO", ehProfessor
+                ? "Campos obrigatorios: nome e departamento; senha e opcional."
+                : "Campo obrigatorio: nome; senha e opcional.");
         }
-        return crow::response(resposta);
+
+        try {
+            const bool atualizado = sistema.atualizarUsuario(
+                usuario->getId(),
+                static_cast<std::string>(body["nome"]),
+                ehProfessor ? static_cast<std::string>(body["departamento"]) : std::string(),
+                body.has("senha") ? static_cast<std::string>(body["senha"]) : std::string());
+            if (!atualizado) return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+
+            const auto trava = sistema.travarBanco();
+            auto atual = sistema.getRepositorioUsuarios().buscar(usuario->getId());
+            if (!atual) return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+            return crow::response(serializarUsuario(atual));
+        } catch (const std::invalid_argument& erro) {
+            return respostaErro(400, "VALIDACAO", erro.what());
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel atualizar a conta.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/me").methods(crow::HTTPMethod::Delete)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        const auto trava = sistema.travarBanco();
+        try {
+            return respostaRemocaoUsuario(sistema.removerUsuario(usuario->getId()));
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover a conta.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios").methods(crow::HTTPMethod::GET)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
+            return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem listar usuarios.");
+        }
+        const auto trava = sistema.travarBanco();
+        try {
+            std::vector<crow::json::wvalue> lista;
+            for (const auto& item : sistema.getRepositorioUsuarios().listarTodos()) {
+                lista.push_back(serializarUsuario(item));
+            }
+            crow::json::wvalue corpo;
+            corpo = std::move(lista);
+            return crow::response(corpo);
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel listar os usuarios.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/<int>").methods(crow::HTTPMethod::GET)
+    ([&sistema](const crow::request& req, int id) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
+            return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem consultar usuarios.");
+        }
+        const auto trava = sistema.travarBanco();
+        try {
+            auto encontrado = sistema.getRepositorioUsuarios().buscar(id);
+            if (!encontrado) return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+            return crow::response(serializarUsuario(encontrado));
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel consultar o usuario.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/<int>").methods(crow::HTTPMethod::Delete)
+    ([&sistema](const crow::request& req, int id) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
+            return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem remover usuarios.");
+        }
+        const auto trava = sistema.travarBanco();
+        try {
+            return respostaRemocaoUsuario(sistema.removerUsuario(id));
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover o usuario.");
+        }
     });
 
     CROW_ROUTE(app, "/api/reservas/minhas").methods(crow::HTTPMethod::GET)

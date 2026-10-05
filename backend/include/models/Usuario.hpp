@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <string>
+#include <utility>
 
 class Espaco; // forward declaration
 
@@ -31,10 +32,17 @@ public:
 
     // Cada tipo de usuario decide, a sua maneira, se pode reservar um espaco.
     virtual bool validarPermissaoReserva(const Espaco& e) const = 0;
+    // Valor da coluna usuarios.tipo correspondente ao tipo concreto.
+    virtual std::string tipo() const = 0;
 
     int getId() const { return id; }
     const std::string& getNome() const { return nome; }
     const std::string& getEmail() const { return email; }
+    // Usado so pela persistencia; nunca deve sair na API.
+    const std::string& getSenhaHash() const { return senhaHash; }
 
     void setId(int novoId) { id = novoId; }
+    void setNome(std::string novoNome) { nome = std::move(novoNome); }
+    // Recebe um hash pronto (ver gerarHashSenha), nunca a senha em texto puro.
+    void setSenhaHash(std::string novoHash) { senhaHash = std::move(novoHash); }
 };

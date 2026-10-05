@@ -163,6 +163,46 @@ bool SistemaDeReservas::cadastrarProfessor(
         nomeNormalizado, emailNormalizado, senhaHash, departamentoNormalizado);
 }
 
+bool SistemaDeReservas::atualizarUsuario(
+    int idUsuario, const std::string& nome,
+    const std::string& departamento, const std::string& novaSenha) {
+    const auto nomeNormalizado = aparar(nome);
+    const auto departamentoNormalizado = aparar(departamento);
+    if (nomeNormalizado.empty()) throw std::invalid_argument("Informe o nome.");
+    if (!novaSenha.empty() && (novaSenha.size() < 8 || novaSenha.size() > 1024)) {
+        throw std::invalid_argument("A senha deve conter entre 8 e 1024 caracteres.");
+    }
+
+    // Como no cadastro, o PBKDF2 roda antes de pegar a trava do banco.
+    const auto novoHash = novaSenha.empty() ? std::string() : Usuario::gerarHashSenha(novaSenha);
+    const auto trava = travarBanco();
+    auto usuario = repoUsuarios.buscar(idUsuario);
+    if (!usuario) return false;
+
+    if (auto professor = std::dynamic_pointer_cast<Professor>(usuario)) {
+        if (departamentoNormalizado.empty()) throw std::invalid_argument("Informe o departamento.");
+        professor->setDepartamento(departamentoNormalizado);
+    }
+    usuario->setNome(nomeNormalizado);
+    if (!novoHash.empty()) usuario->setSenhaHash(novoHash);
+    repoUsuarios.atualizar(usuario);
+    // Nao e preciso limpar credenciaisVerificadas: o resumo depende do hash salvo,
+    // entao a senha antiga deixa de valer assim que o novo hash e gravado.
+    return true;
+}
+
+ResultadoRemocaoUsuario SistemaDeReservas::removerUsuario(int idUsuario) {
+    auto usuario = repoUsuarios.buscar(idUsuario);
+    if (!usuario) return ResultadoRemocaoUsuario::NAO_ENCONTRADO;
+    if (!std::dynamic_pointer_cast<Professor>(usuario)) return ResultadoRemocaoUsuario::ADMINISTRADOR;
+    if (repoUsuarios.possuiReservas(idUsuario)) return ResultadoRemocaoUsuario::POSSUI_RESERVAS;
+
+    repoUsuarios.remover(idUsuario);
+    std::lock_guard<std::mutex> trava(mutexCredenciais);
+    credenciaisVerificadas.erase(usuario->getEmail());
+    return ResultadoRemocaoUsuario::REMOVIDO;
+}
+
 bool SistemaDeReservas::alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios) {
     auto reserva = repoReservas.buscar(idReserva);
     if (!reserva || !reserva->getEspaco() ||

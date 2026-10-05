@@ -9,6 +9,7 @@ public:
     using Usuario::Usuario;
 
     bool validarPermissaoReserva(const Espaco& e) const override;
+    std::string tipo() const override { return "ADMINISTRADOR"; }
 
     // Acoes exclusivas do administrador sobre reservas pendentes.
     bool aprovarReserva(SistemaDeReservas& sistema, int idReserva);

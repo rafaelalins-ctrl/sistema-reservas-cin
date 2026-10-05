@@ -11,10 +11,11 @@ administradores mantem o cadastro de espacos e decidem os pedidos.
 | Perfil | Funcionalidades |
 | --- | --- |
 | Visitante | Criar conta de professor e entrar no sistema. |
-| Professor | Consultar espacos e disponibilidade, solicitar reservas recorrentes, consultar as proprias reservas e cancelar pedidos vigentes. |
-| Administrador | Cadastrar, consultar, editar, colocar em manutencao e remover espacos; consultar reservas e aprovar ou rejeitar pedidos. |
+| Professor | Consultar espacos e disponibilidade, solicitar reservas recorrentes, consultar as proprias reservas e cancelar pedidos vigentes; editar ou remover a propria conta. |
+| Administrador | Cadastrar, consultar, editar, colocar em manutencao e remover espacos; consultar reservas e aprovar ou rejeitar pedidos; consultar usuarios e remover contas de professores. |
 
-O CRUD de espacos e completo. Reservas seguem um ciclo de vida, nao um CRUD generico: sao
+Espacos e usuarios tem CRUD completo. Uma conta so pode ser removida se nao tiver reservas,
+para preservar o historico; contas de administrador nao sao removidas pela API. Reservas seguem um ciclo de vida, nao um CRUD generico: sao
 criadas pelo professor, consultadas por professor/administrador, aprovadas ou rejeitadas pelo
 administrador e canceladas pelo professor. A remocao fisica de reservas nao e exposta pela API.
 
