@@ -1,5 +1,6 @@
 #include "models/Reserva.hpp"
 
+// Parametros por valor + std::move: quem chama pode passar temporarios sem copia extra.
 Reserva::Reserva(int id, std::string dataInicio, std::string dataFim,
                   std::shared_ptr<Professor> solicitante, std::shared_ptr<Espaco> espaco,
                   std::vector<Horario> horarios)

@@ -13,6 +13,7 @@
 #include "models/Reserva.hpp"
 #include "models/Usuario.hpp"
 
+// Uma ocorrencia que impede a reserva; a API devolve a lista no erro 409.
 struct ConflitoReserva {
     // Data e intervalo, em minutos desde meia-noite, de uma ocorrencia ocupada.
     std::string data;
@@ -30,6 +31,9 @@ enum class ResultadoRemocaoUsuario {
 // ==========================================
 // CLASSE ORQUESTRADORA (conecta as rotas do Crow ao dominio/persistencia)
 // ==========================================
+// Fachada (Facade) do backend: as rotas pedem operacoes de alto nivel e esta
+// classe aplica as regras de negocio usando os repositorios. Os repositorios
+// sao membros (composicao): nascem e morrem junto com o sistema.
 class SistemaDeReservas {
 private:
     RepositorioEspaco repoEspacos;
@@ -41,6 +45,7 @@ private:
     // insert; por isso todo acesso ao banco passa por esta trava (ver travarBanco).
     std::mutex mutexBanco;
 
+    // Cache curto de senhas ja conferidas, por email (ver autenticarUsuario).
     struct CredencialVerificada {
         std::array<unsigned char, 32> resumo;
         std::chrono::steady_clock::time_point expiraEm;
@@ -56,6 +61,7 @@ private:
                              std::vector<ConflitoReserva>* conflitos = nullptr);
 
 public:
+    // Recebe a conexao aberta pelo main, que continua responsavel por fechar.
     SistemaDeReservas(sqlite3* db)
         : repoEspacos(db), repoReservas(db, &repoEspacos), repoUsuarios(db) {}
 
@@ -77,7 +83,9 @@ public:
     // (status inicial PENDENTE).
     bool processarNovaReserva(std::shared_ptr<Reserva> r,
                               std::vector<ConflitoReserva>* conflitos = nullptr);
+    // Devolve o usuario (Professor ou Administrador) se email e senha conferem; senao nullptr.
     std::shared_ptr<Usuario> autenticarUsuario(const std::string& email, const std::string& senha);
+    // Valida os dados e cria a conta. Retorna false se o email ja estiver em uso.
     bool cadastrarProfessor(const std::string& nome, const std::string& email,
                             const std::string& senha, const std::string& departamento);
     // Altera nome, departamento (so professores) e, se novaSenha nao for vazia, a senha.
@@ -90,12 +98,14 @@ public:
     // Substitui os horarios de uma reserva existente, revalidando conflitos.
     bool alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios);
 
+    // Retornam false se a reserva nao existir ou nao estiver num status que permita a acao.
     bool aprovarReserva(int idReserva);
     bool rejeitarReserva(int idReserva, const std::string& motivo = "");
     bool cancelarReserva(int idReserva, int idProfessor, const std::string& motivo = "");
 
     void removerEspacoDoSistema(int idEspaco);
 
+    // Acesso aos repositorios para consultas simples das rotas (sempre com travarBanco).
     RepositorioEspaco& getRepositorioEspacos() { return repoEspacos; }
     RepositorioReserva& getRepositorioReservas() { return repoReservas; }
     RepositorioUsuario& getRepositorioUsuarios() { return repoUsuarios; }

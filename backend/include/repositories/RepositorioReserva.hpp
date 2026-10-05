@@ -19,7 +19,9 @@ public:
 
     void salvar(std::shared_ptr<Reserva> obj) override;
     std::shared_ptr<Reserva> buscar(int id) override;
+    // Grava status e motivo. Datas, espaco e professor nao mudam depois de criada.
     void atualizar(std::shared_ptr<Reserva> obj) override;
+    // Troca todos os horarios semanais numa transacao.
     void atualizarHorarios(int idReserva, const std::vector<Horario>& horarios);
     // So altera o estado se a reserva ainda estiver pendente.
     bool atualizarStatusPendente(int id, StatusReserva status, const std::string& motivo = "");
@@ -30,6 +32,7 @@ public:
     std::vector<std::shared_ptr<Reserva>> listarTodos() override;
 
     // Consultas especificas do dominio, alem do CRUD basico do IRepositorio.
+    // Reservas do espaco cujo periodo inclui a data (qualquer status).
     std::vector<std::shared_ptr<Reserva>> listarPorEspacoEData(
         int idEspaco, const std::string& data, int idReservaIgnorada = 0);
 };

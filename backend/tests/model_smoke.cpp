@@ -9,6 +9,8 @@
 #include "models/Reserva.hpp"
 #include "models/SalaAula.hpp"
 
+// Teste rapido das classes de dominio, sem banco nem HTTP (ver run_model_smoke.ps1).
+// Usa assert: qualquer falha encerra o programa com erro.
 int main() {
     const Horario manha(DiaSemana::SEGUNDA, 480, 540);
     const Horario sobreposto(DiaSemana::SEGUNDA, 530, 600);

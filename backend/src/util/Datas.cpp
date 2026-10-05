@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 namespace {
+// Le "AAAA-MM-DD" exigindo que a string inteira seja consumida.
 std::tm lerData(const std::string& data) {
     std::tm partes{};
     std::istringstream entrada(data);
@@ -31,11 +32,13 @@ DiaSemana diaDaData(const std::string& data) {
     if (std::mktime(&partes) == -1) throw std::invalid_argument("Data invalida.");
     // mktime normaliza datas como 2026-02-30; se mudou, a data nao existe.
     if (formatar(partes) != data) throw std::invalid_argument("Data invalida.");
+    // tm_wday comeca no domingo (0); DiaSemana comeca na segunda.
     return static_cast<DiaSemana>((partes.tm_wday + 6) % 7);
 }
 
 std::string proximaData(const std::string& data) {
     auto partes = lerData(data);
+    // mktime ajusta virada de mes e de ano (ex.: 31 -> 1 do mes seguinte).
     partes.tm_mday += 1;
     if (std::mktime(&partes) == -1) throw std::invalid_argument("Data invalida.");
     return formatar(partes);

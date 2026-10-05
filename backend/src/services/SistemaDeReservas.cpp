@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 namespace {
+// Remove espacos e quebras de linha das pontas.
 std::string aparar(const std::string& valor) {
     const auto inicio = valor.find_first_not_of(" \t\r\n");
     if (inicio == std::string::npos) return {};
@@ -23,6 +24,7 @@ std::string normalizarEmail(const std::string& email) {
 }
 }
 
+// Reservas canceladas ou rejeitadas nao ocupam o espaco; pendentes e aprovadas sim.
 bool SistemaDeReservas::verificarDisponibilidade(const Espaco& e, const Horario& h,
                                                    const std::string& data, int idReservaIgnorada) {
     auto reservasExistentes = repoReservas.listarPorEspacoEData(
@@ -59,6 +61,7 @@ bool SistemaDeReservas::processarNovaReserva(
     if (!r || !r->getEspaco() || !r->getSolicitante()) return false;
     if (r->getDataFim() < r->getDataInicio() || r->getHorarios().empty()) return false;
 
+    // Chamada polimorfica: a regra depende do tipo real do solicitante.
     if (!r->getSolicitante()->validarPermissaoReserva(*r->getEspaco())) {
         return false;
     }
@@ -70,12 +73,14 @@ bool SistemaDeReservas::processarNovaReserva(
     return true;
 }
 
+// Percorre cada dia do periodo e confere os horarios semanais que caem naquele dia.
 bool SistemaDeReservas::horariosDisponiveis(
     const Espaco& espaco, const std::vector<Horario>& horarios,
     const std::string& dataInicio, const std::string& dataFim, int idReservaIgnorada,
     std::vector<ConflitoReserva>* conflitos) {
     if (conflitos) conflitos->clear();
     if (horarios.empty() || dataFim < dataInicio) return false;
+    // Valida o formato das datas (lanca std::invalid_argument se invalidas).
     Datas::diaDaData(dataInicio);
     Datas::diaDaData(dataFim);
 
@@ -138,6 +143,7 @@ std::shared_ptr<Usuario> SistemaDeReservas::autenticarUsuario(
     return usuario;
 }
 
+// Validacao simples de email: um unico @, algo antes e um ponto no dominio.
 bool SistemaDeReservas::cadastrarProfessor(
     const std::string& nome, const std::string& email,
     const std::string& senha, const std::string& departamento) {
@@ -203,6 +209,7 @@ ResultadoRemocaoUsuario SistemaDeReservas::removerUsuario(int idUsuario) {
     return ResultadoRemocaoUsuario::REMOVIDO;
 }
 
+// Revalida os novos horarios ignorando a propria reserva, para ela nao conflitar consigo.
 bool SistemaDeReservas::alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios) {
     auto reserva = repoReservas.buscar(idReserva);
     if (!reserva || !reserva->getEspaco() ||

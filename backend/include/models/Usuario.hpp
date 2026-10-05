@@ -8,7 +8,9 @@ class Espaco; // forward declaration
 // ==========================================
 // BLOCO DE USUARIOS (POLIMORFISMO DE AUTORIZACAO)
 // ==========================================
-// Dados e operacoes comuns a professores e administradores.
+// Dados e operacoes comuns a professores e administradores. Classe abstrata:
+// as rotas recebem um shared_ptr<Usuario> e descobrem o perfil por tipo() ou
+// dynamic_pointer_cast<Professor/Administrador>.
 class Usuario {
 protected:
     int id = 0;
@@ -20,6 +22,7 @@ protected:
 public:
     Usuario() = default;
     Usuario(int id, std::string nome, std::string email, std::string senhaHash);
+    // Virtual para que destruir via shared_ptr<Usuario> libere tambem a parte da subclasse.
     virtual ~Usuario() = default;
 
     // Autentica comparando a senha informada com o hash armazenado.

@@ -23,6 +23,13 @@
 #include "models/Usuario.hpp"
 #include "util/Datas.hpp"
 
+// ==========================================
+// PONTO DE ENTRADA E API REST (Crow)
+// ==========================================
+// Cada rota: autentica (HTTP Basic), confere o perfil com dynamic_pointer_cast,
+// trava o banco, chama o SistemaDeReservas/repositorios e serializa a resposta
+// em JSON. Erros seguem o formato {mensagem, codigo, campo?} de respostaErro.
+
 // Aplica o schema.sql na conexao (idempotente: usa CREATE TABLE IF NOT EXISTS).
 static void aplicarSchema(sqlite3* db, const std::string& caminhoSchema) {
     std::ifstream arquivo(caminhoSchema);
@@ -41,6 +48,7 @@ static void aplicarSchema(sqlite3* db, const std::string& caminhoSchema) {
     }
 }
 
+// Migracao simples: adiciona a coluna em bancos criados antes dela existir.
 static void garantirColuna(sqlite3* db, const std::string& tabela,
                            const std::string& coluna, const std::string& definicao) {
     const std::string consulta = "PRAGMA table_info(" + tabela + ");";
@@ -65,6 +73,8 @@ static void garantirColuna(sqlite3* db, const std::string& tabela,
     }
 }
 
+// Le o cabecalho "Authorization: Basic <base64(email:senha)>".
+// Retorna nullopt se o formato for invalido.
 static std::optional<std::pair<std::string, std::string>> decodificarBasic(const std::string& cabecalho) {
     constexpr std::string_view prefixo = "Basic ";
     if (cabecalho.compare(0, prefixo.size(), prefixo) != 0) return std::nullopt;
@@ -110,12 +120,14 @@ static std::optional<std::pair<std::string, std::string>> decodificarBasic(const
     return std::make_pair(decodificado.substr(0, separador), decodificado.substr(separador + 1));
 }
 
+// Usuario autenticado da requisicao, ou nullptr. Trava o banco por conta propria.
 static std::shared_ptr<Usuario> autenticar(const crow::request& req, SistemaDeReservas& sistema) {
     const auto credenciais = decodificarBasic(req.get_header_value("Authorization"));
     if (!credenciais) return nullptr;
     return sistema.autenticarUsuario(credenciais->first, credenciais->second);
 }
 
+// 401 com WWW-Authenticate, como exige o HTTP Basic.
 static crow::response respostaNaoAutorizada() {
     crow::json::wvalue corpo;
     corpo["mensagem"] = "Autenticacao necessaria.";
@@ -127,6 +139,7 @@ static crow::response respostaNaoAutorizada() {
     return resposta;
 }
 
+// Corpo de erro padrao da API; campo indica qual entrada causou o erro.
 static crow::response respostaErro(int status, const std::string& codigo,
                                    const std::string& mensagem, const std::string& campo = "") {
     crow::json::wvalue corpo;
@@ -139,6 +152,7 @@ static crow::response respostaErro(int status, const std::string& codigo,
     return resposta;
 }
 
+// Identificacoes de espaco sao comparadas e salvas em maiusculas.
 static std::string normalizarIdentificacao(const std::string& valor) {
     std::string normalizada = valor;
     std::transform(normalizada.begin(), normalizada.end(), normalizada.begin(), [](unsigned char caractere) {
@@ -147,6 +161,7 @@ static std::string normalizarIdentificacao(const std::string& valor) {
     return normalizada;
 }
 
+// 409 com a lista de datas/horarios que ja estao ocupados.
 static crow::response respostaConflitos(const std::vector<ConflitoReserva>& conflitos) {
     std::vector<crow::json::wvalue> lista;
     for (const auto& conflito : conflitos) {
@@ -165,6 +180,7 @@ static crow::response respostaConflitos(const std::vector<ConflitoReserva>& conf
     return crow::response(409, corpo);
 }
 
+// Corpo opcional {"motivo": "..."} de aprovar/rejeitar/cancelar.
 static std::string lerMotivoOpcional(const crow::request& req) {
     if (req.body.empty()) return {};
     const auto corpo = crow::json::load(req.body);
@@ -178,6 +194,8 @@ static std::string lerMotivoOpcional(const crow::request& req) {
     return static_cast<std::string>(corpo["motivo"]);
 }
 
+// Campos comuns vem dos getters de Espaco; descricao usa o metodo virtual.
+// Os campos especificos dependem do subtipo, descoberto com dynamic_pointer_cast.
 static crow::json::wvalue serializarEspaco(const std::shared_ptr<Espaco>& espaco) {
     crow::json::wvalue item;
     item["id"] = espaco->getId();
@@ -208,6 +226,8 @@ static crow::json::wvalue serializarEspaco(const std::shared_ptr<Espaco>& espaco
     return item;
 }
 
+// Leitores de campos JSON: devolvem o padrao se a chave faltar e
+// lancam std::invalid_argument se o tipo estiver errado.
 static std::string lerTexto(const crow::json::rvalue& corpo, const char* chave,
                             const std::string& padrao = "") {
     if (!corpo.has(chave)) return padrao;
@@ -238,6 +258,7 @@ static bool lerBooleano(const crow::json::rvalue& corpo, const char* chave, bool
     return corpo[chave].b();
 }
 
+// Monta o subtipo de Espaco indicado em "tipo" a partir do corpo de POST/PUT.
 static std::shared_ptr<Espaco> construirEspaco(const crow::json::rvalue& corpo, int id = 0) {
     if (!corpo || corpo.t() != crow::json::type::Object) {
         throw std::invalid_argument("O corpo deve ser um objeto JSON.");
@@ -288,6 +309,7 @@ static std::shared_ptr<Espaco> construirEspaco(const crow::json::rvalue& corpo, 
     throw std::invalid_argument("Tipo de espaco invalido.");
 }
 
+// Evita dois espacos com a mesma identificacao (ignorarId: o proprio espaco no PUT).
 static bool identificacaoEmUso(SistemaDeReservas& sistema, const std::string& identificacao,
                                int ignorarId = 0) {
     for (const auto& espaco : sistema.getRepositorioEspacos().listarTodos()) {
@@ -297,6 +319,7 @@ static bool identificacaoEmUso(SistemaDeReservas& sistema, const std::string& id
     return false;
 }
 
+// O catalogo usa letras de bloco; o que nao for A-E vira AREA_2.
 static BlocoCIn blocoMock(const std::string& bloco) {
     if (bloco == "A") return BlocoCIn::BLOCO_A;
     if (bloco == "B") return BlocoCIn::BLOCO_B;
@@ -306,6 +329,8 @@ static BlocoCIn blocoMock(const std::string& bloco) {
     return BlocoCIn::AREA_2;
 }
 
+// Na primeira execucao (tabela de espacos vazia), importa salas, laboratorios e
+// auditorios do catalogo do CIn. Capacidade e atributos sao valores de demonstracao.
 static void semearEspacosMock(SistemaDeReservas& sistema, sqlite3* catalogoDb) {
     auto& repositorio = sistema.getRepositorioEspacos();
     if (!repositorio.listarTodos().empty()) return;
@@ -393,6 +418,7 @@ static crow::response respostaRemocaoUsuario(ResultadoRemocaoUsuario resultado) 
     return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover o usuario.");
 }
 
+// Reserva com resumo do espaco, do professor e dos horarios semanais.
 static crow::json::wvalue serializarReserva(const std::shared_ptr<Reserva>& reserva) {
     crow::json::wvalue item;
     item["id"] = reserva->getId();
@@ -429,6 +455,7 @@ static crow::json::wvalue serializarReserva(const std::shared_ptr<Reserva>& rese
 }
 
 int main() {
+    // Banco de reservas (leitura/escrita), criado a partir do schema se nao existir.
     sqlite3* db = nullptr;
     if (sqlite3_open("database/reservas.db", &db) != SQLITE_OK) {
         std::cerr << "Erro ao abrir banco: " << sqlite3_errmsg(db) << std::endl;
@@ -445,6 +472,7 @@ int main() {
         return 1;
     }
 
+    // Catalogo oficial de espacos do CIn, aberto so para leitura.
     sqlite3* catalogoDb = nullptr;
     if (sqlite3_open_v2("database/cin_2026.db", &catalogoDb, SQLITE_OPEN_READONLY, nullptr) != SQLITE_OK) {
         std::cerr << "Erro ao abrir catalogo CIn: " << sqlite3_errmsg(catalogoDb) << std::endl;
@@ -455,6 +483,7 @@ int main() {
 
     SistemaDeReservas sistema(db);
 
+    // Primeiro administrador vem de variaveis de ambiente; nao existe senha padrao.
     const char* emailAdmin = std::getenv("CIN_ADMIN_EMAIL");
     const char* senhaAdmin = std::getenv("CIN_ADMIN_SENHA");
     if ((emailAdmin == nullptr) != (senhaAdmin == nullptr)) {
@@ -503,7 +532,7 @@ int main() {
     crow::SimpleApp app;
 
     // ---------------------------------------------
-    // GET /api/espacos - lista todos os espacos
+    // GET /api/espacos?tipo=&bloco=&capacidadeMin=&acessivel= - lista e filtra (publico)
     // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
@@ -543,6 +572,9 @@ int main() {
         return crow::response(resposta);
     });
 
+    // ---------------------------------------------
+    // GET /api/espacos/:id - detalha um espaco (publico)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::GET)
     ([&sistema](int id) {
         const auto trava = sistema.travarBanco();
@@ -551,6 +583,9 @@ int main() {
         return crow::response(serializarEspaco(espaco));
     });
 
+    // ---------------------------------------------
+    // POST /api/espacos - cadastra espaco (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -576,6 +611,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // PUT /api/espacos/:id - substitui os dados do espaco; o tipo nao muda (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::PUT)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -604,6 +642,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // PATCH /api/espacos/:id - liga/desliga manutencao (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::PATCH)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -629,6 +670,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // DELETE /api/espacos/:id - remove espaco sem reservas (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::Delete)
     ([&sistema, db](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -658,6 +702,10 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // GET /api/espacos/:id/reservas-futuras - quantas reservas pendentes ou
+    // aprovadas ainda nao terminaram (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>/reservas-futuras").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -680,6 +728,10 @@ int main() {
         return crow::response(corpo);
     });
 
+    // ---------------------------------------------
+    // GET /api/espacos/:id/agenda?de=&ate= - ocupacoes dia a dia
+    // (professor so ve horarios; admin ve tambem quem reservou)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>/agenda").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -736,6 +788,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // GET /api/catalogo/espacos - catalogo CIn completo, inclusive nao reservaveis
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/catalogo/espacos").methods(crow::HTTPMethod::GET)
     ([&sistema, catalogoDb]() {
         const auto trava = sistema.travarBanco();
@@ -777,7 +832,8 @@ int main() {
     });
 
     // ---------------------------------------------
-    // GET /api/espacos/disponiveis?data=&inicio=&fim=&capacidadeMin=
+    // GET /api/espacos/disponiveis?data=&inicio=&fim=&capacidadeMin= - espacos
+    // livres naquele dia e intervalo (inicio/fim em minutos desde meia-noite)
     // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/disponiveis").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
@@ -823,6 +879,9 @@ int main() {
         return crow::response(resposta);
     });
 
+    // ---------------------------------------------
+    // POST /api/auth/register - cria conta de professor (publico)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/auth/register").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req) {
         auto body = crow::json::load(req.body);
@@ -857,6 +916,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // POST /api/auth/login - confere as credenciais Basic e devolve o perfil
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/auth/login").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -976,6 +1038,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // GET /api/reservas/minhas - reservas do professor autenticado
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/minhas").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -1001,6 +1066,9 @@ int main() {
         return crow::response(corpo);
     });
 
+    // ---------------------------------------------
+    // GET /api/reservas/pendentes - fila de pedidos a decidir (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/pendentes").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -1026,6 +1094,9 @@ int main() {
         return crow::response(corpo);
     });
 
+    // ---------------------------------------------
+    // GET /api/reservas - todas as reservas com filtros e paginacao (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -1077,6 +1148,7 @@ int main() {
                 (a->getDataInicio() == b->getDataInicio() && a->getId() > b->getId());
         });
 
+        // Mais recentes primeiro; a pagina e um recorte da lista ja filtrada.
         const std::size_t inicio = static_cast<std::size_t>(pagina - 1) * porPagina;
         std::vector<crow::json::wvalue> itens;
         for (std::size_t i = inicio; i < filtradas.size() && i < inicio + porPagina; ++i) {
@@ -1136,6 +1208,7 @@ int main() {
             if (dataFim < dataInicio) return respostaErro(400, "VALIDACAO", "dataFim deve ser igual ou posterior a dataInicio.", "dataFim");
             if (horariosJson.size() == 0) return respostaErro(400, "VALIDACAO", "Informe ao menos um horario.", "horarios");
 
+            // 1. Converte cada horario do JSON em um objeto Horario.
             std::vector<Horario> horarios;
             for (std::size_t i = 0; i < horariosJson.size(); ++i) {
                 const auto& horarioJson = horariosJson[i];
@@ -1156,6 +1229,7 @@ int main() {
                     static_cast<int>(inicio), static_cast<int>(fim));
             }
 
+            // 2. O proprio pedido nao pode ter horarios sobrepostos.
             for (std::size_t i = 0; i < horarios.size(); ++i) {
                 for (std::size_t j = i + 1; j < horarios.size(); ++j) {
                     if (horarios[i].getDiaSemana() == horarios[j].getDiaSemana() &&
@@ -1165,6 +1239,7 @@ int main() {
                 }
             }
 
+            // 3. Cada dia da semana pedido precisa ocorrer no periodo; basta olhar a primeira semana.
             std::vector<bool> diaOcorreu(horarios.size(), false);
             std::string dataVerificada = dataInicio;
             for (std::size_t diaOffset = 0; diaOffset < 7 && dataVerificada <= dataFim; ++diaOffset) {
@@ -1178,6 +1253,7 @@ int main() {
                 return respostaErro(400, "VALIDACAO", "Nao ha ocorrencia de um dos dias no periodo informado.", "horarios");
             }
 
+            // 4. O espaco precisa existir e estar em uso.
             espaco = sistema.getRepositorioEspacos().buscar(static_cast<int>(idEspaco));
             if (!espaco) return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
             if (espaco->isEmManutencao()) {
@@ -1189,6 +1265,7 @@ int main() {
         }
 
         try {
+            // 5. O sistema confere conflitos com outras reservas e grava como PENDENTE.
             std::vector<ConflitoReserva> conflitos;
             reserva->setCriadaEm(Datas::agoraUtc());
             if (!sistema.processarNovaReserva(reserva, &conflitos)) {
@@ -1203,7 +1280,7 @@ int main() {
     });
 
     // ---------------------------------------------
-    // POST /api/reservas/:id/aprovar
+    // POST /api/reservas/:id/aprovar (admin)
     // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/<int>/aprovar").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req, int idReserva) {
@@ -1222,6 +1299,9 @@ int main() {
         return crow::response(204);
     });
 
+    // ---------------------------------------------
+    // POST /api/reservas/:id/rejeitar - motivo opcional (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/<int>/rejeitar").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req, int idReserva) {
         auto usuario = autenticar(req, sistema);
@@ -1242,6 +1322,9 @@ int main() {
         return crow::response(204);
     });
 
+    // ---------------------------------------------
+    // POST /api/reservas/:id/cancelar - professor cancela a propria reserva
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/<int>/cancelar").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req, int idReserva) {
         auto usuario = autenticar(req, sistema);
@@ -1267,6 +1350,8 @@ int main() {
         return crow::response(204);
     });
 
+    // Escuta so em localhost; o Vite encaminha /api do frontend para ca.
+    // multithreaded: requisicoes em paralelo, por isso a trava do banco.
     app.bindaddr("127.0.0.1").port(18080).multithreaded().run();
 
     sqlite3_close(catalogoDb);

@@ -15,6 +15,7 @@ constexpr int iteracoesPbkdf2 = 600000;
 constexpr std::size_t tamanhoSalt = 16;
 constexpr std::size_t tamanhoHash = 32;
 
+// Salt e hash sao bytes; no banco ficam em Base64 dentro do texto do hash.
 std::string codificarBase64(const unsigned char* dados, std::size_t tamanho) {
     std::string resultado(4 * ((tamanho + 2) / 3), '\0');
     const int tamanhoCodificado = EVP_EncodeBlock(
@@ -82,6 +83,7 @@ bool verificarHashSenha(const std::string& senha, const std::string& hashArmazen
 Usuario::Usuario(int id, std::string nome, std::string email, std::string senhaHash)
     : id(id), nome(std::move(nome)), email(std::move(email)), senhaHash(std::move(senhaHash)) {}
 
+// O email ja chega normalizado; a senha e conferida recalculando o PBKDF2.
 bool Usuario::fazerLogin(const std::string& emailInformado, const std::string& senha) const {
     return emailInformado == email && !senha.empty() && senha.size() <= 1024 &&
         verificarHashSenha(senha, senhaHash);
@@ -90,6 +92,7 @@ bool Usuario::fazerLogin(const std::string& emailInformado, const std::string& s
 std::array<unsigned char, 32> Usuario::resumoCredencial(const std::string& senha) const {
     std::array<unsigned char, 32> resumo{};
     std::string entrada = senhaHash;
+    // Separador entre hash e senha, para que pares diferentes nunca gerem o mesmo texto.
     entrada.push_back('\0');
     entrada += senha;
     unsigned int tamanho = 0;
@@ -104,6 +107,7 @@ std::string Usuario::gerarHashSenha(const std::string& senha) {
     if (senha.empty() || senha.size() > 1024) {
         throw std::invalid_argument("Senha deve conter entre 1 e 1024 bytes.");
     }
+    // Salt aleatorio por senha: duas contas com a mesma senha tem hashes diferentes.
     std::array<unsigned char, tamanhoSalt> salt{};
     std::array<unsigned char, tamanhoHash> hash{};
     if (RAND_bytes(salt.data(), static_cast<int>(salt.size())) != 1 ||

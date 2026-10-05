@@ -5,9 +5,13 @@
 // ==========================================
 // BLOCO DE ESPACOS (POLIMORFISMO DE EXIBICAO)
 // ==========================================
+// Classe abstrata: tem metodos virtuais puros, entao so existem objetos de
+// SalaAula, Laboratorio ou Auditorio. O resto do sistema usa Espaco& ou
+// shared_ptr<Espaco> e nao precisa saber qual e o tipo concreto.
 class Espaco {
 protected:
     // Informacoes compartilhadas por salas, laboratorios e auditorios.
+    // protected: as subclasses acessam direto; o restante do codigo usa os getters.
     int id = 0;
     std::string identificacao;
     int capacidade = 0;
@@ -24,6 +28,7 @@ public:
            TipoMobilia mobilia, int qtdTomadas, bool acessivelCadeirante,
            bool requerRetiradaChave, bool emManutencao);
 
+    // Virtual para que destruir via shared_ptr<Espaco> libere tambem a parte da subclasse.
     virtual ~Espaco() = default;
 
     // Cada subtipo monta uma descricao com suas caracteristicas.
