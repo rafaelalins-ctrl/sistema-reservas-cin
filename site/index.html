@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reserva de Espaços do CIn</title>
+    <meta
+      name="description"
+      content="Sistema de reserva de salas, laboratórios e auditórios do Centro de Informática da UFPE. Projeto prático de Estruturas de Dados Orientadas a Objetos (CIN0135) em C++."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topo">
+      <div class="container">
+        <a class="marca" href="#">
+          <strong>CIn</strong>
+          <span>UFPE · Reserva de espaços</span>
+        </a>
+        <nav aria-label="Seções">
+          <a href="#funcionalidades">Funcionalidades</a>
+          <a href="#telas">Telas</a>
+          <a href="#poo">POO</a>
+          <a href="#arquitetura">Arquitetura</a>
+          <a href="#video">Vídeo</a>
+          <a href="#grupo">Grupo</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="hero container">
+        <p class="sobrelinha">CIN0135 · Estruturas de Dados Orientadas a Objetos · 2026.2</p>
+        <h1>Reserve o espaço certo para cada encontro.</h1>
+        <p>
+          Um sistema de informação em C++ para as salas de aula, laboratórios e auditórios do
+          Centro de Informática da UFPE: professores consultam a disponibilidade e pedem reservas
+          recorrentes; a administração mantém o cadastro de espaços e decide os pedidos.
+        </p>
+        <div class="acoes">
+          <a class="botao primario" href="https://github.com/rafaelalins-ctrl/sistema-reservas-cin">
+            Código no GitHub →
+          </a>
+          <a
+            class="botao"
+            href="https://github.com/rafaelalins-ctrl/sistema-reservas-cin/blob/main/RELATORIO.md"
+          >
+            Relatório
+          </a>
+          <a class="botao" href="#video">Vídeo</a>
+        </div>
+      </div>
+
+      <section id="funcionalidades">
+        <div class="container">
+          <h2>Funcionalidades</h2>
+          <p class="intro">
+            Cada perfil enxerga só o que lhe cabe. Espaços e usuários têm CRUD completo, persistido
+            em SQLite; reservas seguem um ciclo de vida (pendente → aprovada, rejeitada ou
+            cancelada).
+          </p>
+          <div class="grade">
+            <article class="cartao">
+              <h3>Professor</h3>
+              <ul>
+                <li>Consulta espaços e a disponibilidade por data e horário</li>
+                <li>Pede reservas avulsas ou recorrentes no semestre</li>
+                <li>Vê os conflitos exatos quando um horário está ocupado</li>
+                <li>Acompanha e cancela as próprias reservas</li>
+                <li>Edita ou exclui a própria conta</li>
+              </ul>
+            </article>
+            <article class="cartao">
+              <h3>Administração</h3>
+              <ul>
+                <li>Cadastra, edita e remove salas, laboratórios e auditórios</li>
+                <li>Coloca espaços em manutenção</li>
+                <li>Aprova ou rejeita pedidos, com motivo</li>
+                <li>Consulta todas as reservas com filtros</li>
+                <li>Consulta usuários e remove contas de professores</li>
+              </ul>
+            </article>
+            <article class="cartao">
+              <h3>Regras de negócio</h3>
+              <ul>
+                <li>Pendentes e aprovadas ocupam o horário</li>
+                <li>Intervalos encostados (10h–12h e 12h–13h) não conflitam</li>
+                <li>Espaço em manutenção não aceita pedidos</li>
+                <li>Quem tem reservas não pode ser removido</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="telas">
+        <div class="container">
+          <h2>Telas</h2>
+          <p class="intro">
+            A interface em React é o cliente principal da API em C++. As capturas usam os dados de
+            demonstração do sistema.
+          </p>
+          <div class="capturas">
+            <figure>
+              <img
+                src="img/minhas-reservas.png"
+                alt="Lista de reservas da professora, com status e botão de cancelar"
+                loading="lazy"
+                width="1920"
+                height="1350"
+              />
+              <figcaption>
+                <strong>Minhas reservas.</strong> O professor acompanha os pedidos e cancela os
+                vigentes.
+              </figcaption>
+            </figure>
+            <figure>
+              <img
+                src="img/nova-reserva.png"
+                alt="Formulário de nova reserva com período e horários semanais"
+                loading="lazy"
+                width="1920"
+                height="1350"
+              />
+              <figcaption>
+                <strong>Nova reserva.</strong> Período e horários semanais em um único pedido.
+              </figcaption>
+            </figure>
+            <figure>
+              <img
+                src="img/solicitacoes.png"
+                alt="Fila de solicitações pendentes com botões de aprovar e rejeitar"
+                loading="lazy"
+                width="1920"
+                height="1350"
+              />
+              <figcaption>
+                <strong>Solicitações.</strong> A administração decide os pedidos por ordem de
+                chegada.
+              </figcaption>
+            </figure>
+            <figure>
+              <img
+                src="img/espacos.png"
+                alt="Catálogo de espaços com filtros por tipo, bloco e capacidade"
+                loading="lazy"
+                width="1920"
+                height="1350"
+              />
+              <figcaption>
+                <strong>Espaços.</strong> Catálogo com filtros e ações de gestão.
+              </figcaption>
+            </figure>
+            <figure>
+              <img
+                src="img/espaco-detalhe.png"
+                alt="Detalhe de um laboratório com computadores e softwares instalados"
+                loading="lazy"
+                width="1920"
+                height="1350"
+              />
+              <figcaption>
+                <strong>Detalhe do espaço.</strong> Cada tipo mostra os próprios atributos — o
+                polimorfismo aparece na tela.
+              </figcaption>
+            </figure>
+            <figure>
+              <img
+                src="img/minha-conta.png"
+                alt="Tela Minha conta com nome, departamento e troca de senha"
+                loading="lazy"
+                width="1920"
+                height="1350"
+              />
+              <figcaption>
+                <strong>Minha conta.</strong> Edição e exclusão da própria conta (CRUD de usuário).
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section id="poo">
+        <div class="container">
+          <h2>Orientação a objetos em C++</h2>
+          <p class="intro">
+            O backend foi modelado em classes. A explicação completa, com trechos de código, está
+            na
+            <a
+              href="https://github.com/rafaelalins-ctrl/sistema-reservas-cin/blob/main/RELATORIO.md#4-conceitos-de-orientacao-a-objetos"
+              >seção 4 do relatório</a
+            >.
+          </p>
+          <div class="tabela">
+            <table>
+              <thead>
+                <tr>
+                  <th>Conceito</th>
+                  <th>Onde aparece</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Encapsulamento</td>
+                  <td>
+                    Atributos <code>private</code> em <code>Reserva</code> e <code>Horario</code>;
+                    o hash de senha nunca sai de <code>Usuario</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Herança</td>
+                  <td>
+                    <code>Espaco</code> → <code>SalaAula</code>, <code>Laboratorio</code>,
+                    <code>Auditorio</code>; <code>Usuario</code> → <code>Professor</code>,
+                    <code>Administrador</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Classes abstratas</td>
+                  <td>
+                    <code>Espaco</code> e <code>Usuario</code> têm métodos virtuais puros;
+                    <code>IRepositorio&lt;T&gt;</code> é uma interface.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Polimorfismo</td>
+                  <td>
+                    <code>validarPermissaoReserva</code> decide por tipo de usuário;
+                    <code>obterDescricaoDetalhada</code> e <code>tipo()</code> por tipo de espaço.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Sobrecarga e templates</td>
+                  <td>
+                    <code>toString</code> para cada <code>enum class</code>; um único
+                    <code>IRepositorio&lt;T&gt;</code> para três entidades.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Ponteiros e referências</td>
+                  <td>
+                    <code>std::shared_ptr</code> nas associações, ponteiros não proprietários para a
+                    conexão SQLite, referências <code>const</code> nos getters.
+                  </td>
+                </tr>
+                <tr>
+                  <td>Padrões de projeto</td>
+                  <td>
+                    Repository, Facade (<code>SistemaDeReservas</code>), Factory
+                    (<code>mapearLinha</code>) e RAII na trava do banco.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 style="margin: 40px 0 16px">Diagrama de classes</h3>
+          <div class="diagrama">
+            <pre class="mermaid">
+classDiagram
+    direction TB
+
+    class Usuario {
+        &lt;&lt;abstract&gt;&gt;
+        #int id
+        #string nome
+        #string email
+        #string senhaHash
+        +fazerLogin(email, senha) bool
+        +gerarHashSenha(senha) string$
+        +validarPermissaoReserva(Espaco) bool*
+        +tipo() string*
+    }
+    class Professor {
+        -string departamento
+        +validarPermissaoReserva(Espaco) bool
+        +tipo() string
+        +solicitarReserva(SistemaDeReservas, Reserva) bool
+        +cancelarReserva(SistemaDeReservas, id, motivo) bool
+    }
+    class Administrador {
+        +validarPermissaoReserva(Espaco) bool
+        +tipo() string
+        +aprovarReserva(SistemaDeReservas, id) bool
+        +rejeitarReserva(SistemaDeReservas, id, motivo) bool
+    }
+    Usuario &lt;|-- Professor
+    Usuario &lt;|-- Administrador
+
+    class Espaco {
+        &lt;&lt;abstract&gt;&gt;
+        #int id
+        #string identificacao
+        #int capacidade
+        #BlocoCIn bloco
+        #bool emManutencao
+        +obterDescricaoDetalhada() string*
+        +tipo() string*
+    }
+    class SalaAula {
+        -TipoQuadro tipoQuadro
+        -bool possuiProjetor
+    }
+    class Laboratorio {
+        -int qtdComputadores
+        -vector~string~ softwaresInstalados
+    }
+    class Auditorio {
+        -bool equipamentoSom
+        -bool cabineTraducao
+    }
+    Espaco &lt;|-- SalaAula
+    Espaco &lt;|-- Laboratorio
+    Espaco &lt;|-- Auditorio
+
+    class Reserva {
+        -int id
+        -string dataInicio
+        -string dataFim
+        -StatusReserva status
+        +aprovar()
+        +rejeitar()
+        +cancelar()
+    }
+    class Horario {
+        -DiaSemana diaSemana
+        -int horaInicioMin
+        -int horaFimMin
+        +conflitaCom(Horario) bool
+    }
+    Reserva --&gt; &quot;1&quot; Professor : solicitante
+    Reserva --&gt; &quot;1&quot; Espaco : espaco
+    Reserva *-- &quot;1..*&quot; Horario : horarios
+
+    class IRepositorio~T~ {
+        &lt;&lt;interface&gt;&gt;
+        +salvar(T)*
+        +buscar(id) T*
+        +atualizar(T)*
+        +remover(id)*
+        +listarTodos() vector~T~*
+    }
+    class RepositorioEspaco
+    class RepositorioReserva
+    class RepositorioUsuario
+    IRepositorio &lt;|.. RepositorioEspaco : T = Espaco
+    IRepositorio &lt;|.. RepositorioReserva : T = Reserva
+    IRepositorio &lt;|.. RepositorioUsuario : T = Usuario
+    RepositorioReserva --&gt; RepositorioEspaco : usa
+
+    class SistemaDeReservas {
+        +processarNovaReserva(Reserva) bool
+        +verificarDisponibilidade(Espaco, Horario, data) bool
+        +autenticarUsuario(email, senha) Usuario
+        +aprovarReserva(id) bool
+        +cancelarReserva(id, idProfessor) bool
+        +atualizarUsuario(...) bool
+        +removerUsuario(id) ResultadoRemocaoUsuario
+    }
+    SistemaDeReservas *-- RepositorioEspaco
+    SistemaDeReservas *-- RepositorioReserva
+    SistemaDeReservas *-- RepositorioUsuario
+</pre
+            >
+          </div>
+        </div>
+      </section>
+
+      <section id="arquitetura">
+        <div class="container">
+          <h2>Arquitetura</h2>
+          <p class="intro">
+            Três camadas no backend, uma API REST no meio e a interface web na ponta.
+          </p>
+          <div class="grade">
+            <article class="cartao">
+              <h3>Backend em C++17</h3>
+              <p>
+                Servidor <a href="https://crowcpp.org">Crow</a> com as rotas REST,
+                <code>SistemaDeReservas</code> com as regras e repositórios com prepared statements
+                no SQLite. Senhas com PBKDF2 (OpenSSL).
+              </p>
+            </article>
+            <article class="cartao">
+              <h3>Banco SQLite</h3>
+              <p>
+                Tabelas <code>usuarios</code>, <code>espacos</code>, <code>reservas</code> e
+                <code>reserva_horarios</code>. O catálogo oficial de 77 espaços do CIn é importado
+                na primeira execução.
+              </p>
+            </article>
+            <article class="cartao">
+              <h3>Frontend em React</h3>
+              <p>
+                React + TypeScript + Vite, seguindo a identidade visual do CIn. Fala com o backend
+                por JSON; também roda com uma API simulada para demonstração.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="video">
+        <div class="container">
+          <h2>Vídeo</h2>
+          <p class="intro">
+            Demonstração das funcionalidades e dos conceitos de orientação a objetos usados no
+            código.
+          </p>
+          <div class="video">
+            <!-- TODO: trocar este bloco pelo iframe do YouTube:
+                 <iframe src="https://www.youtube-nocookie.com/embed/ID_DO_VIDEO"
+                   title="Vídeo do projeto" allowfullscreen loading="lazy"></iframe> -->
+            <div class="pendente">TODO: link do vídeo no YouTube</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="grupo">
+        <div class="container">
+          <h2>Grupo</h2>
+          <p class="intro">
+            Projeto prático da disciplina CIN0135, ministrada pelo prof. Francisco Simões no CIn-UFPE.
+          </p>
+          <div class="grade">
+            <!-- TODO: preencher nome, e-mail e o que cada pessoa fez. -->
+            <article class="cartao"><h3>TODO: integrante 1</h3><p>Contribuição</p></article>
+            <article class="cartao"><h3>TODO: integrante 2</h3><p>Contribuição</p></article>
+            <article class="cartao"><h3>TODO: integrante 3</h3><p>Contribuição</p></article>
+            <article class="cartao"><h3>TODO: integrante 4</h3><p>Contribuição</p></article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        <span>Centro de Informática · Universidade Federal de Pernambuco</span>
+        <a href="https://github.com/rafaelalins-ctrl/sistema-reservas-cin">Repositório no GitHub</a>
+      </div>
+    </footer>
+
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'base',
+        themeVariables: {
+          fontFamily: 'Inter, system-ui, sans-serif',
+          primaryColor: '#ffffff',
+          primaryBorderColor: '#cf2d3b',
+          lineColor: '#555555',
+        },
+      })
+    </script>
+  </body>
+</html>
