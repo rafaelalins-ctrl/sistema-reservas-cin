@@ -1,6 +1,10 @@
 #pragma once
+#include <array>
+#include <chrono>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "repositories/RepositorioEspaco.hpp"
 #include "repositories/RepositorioReserva.hpp"
@@ -25,6 +29,19 @@ private:
     RepositorioReserva repoReservas;
     RepositorioUsuario repoUsuarios;
 
+    // Uma unica conexao SQLite atende todas as threads do Crow. Transacoes, last_insert_rowid
+    // e changes sao estado da conexao, e a checagem de conflito precisa ser atomica com o
+    // insert; por isso todo acesso ao banco passa por esta trava (ver travarBanco).
+    std::mutex mutexBanco;
+
+    struct CredencialVerificada {
+        std::array<unsigned char, 32> resumo;
+        std::chrono::steady_clock::time_point expiraEm;
+    };
+    static constexpr std::chrono::minutes validadeCredencial{5};
+    std::mutex mutexCredenciais;
+    std::unordered_map<std::string, CredencialVerificada> credenciaisVerificadas;
+
     // Se informado, conflitos recebe todas as ocorrencias ocupadas encontradas.
     bool horariosDisponiveis(const Espaco& espaco, const std::vector<Horario>& horarios,
                              const std::string& dataInicio, const std::string& dataFim,
@@ -34,6 +51,11 @@ private:
 public:
     SistemaDeReservas(sqlite3* db)
         : repoEspacos(db), repoReservas(db, &repoEspacos), repoUsuarios(db) {}
+
+    // Trava o banco ate o fim do escopo. As rotas a pegam depois de autenticar e a mantem
+    // durante todo o acesso a repositorios. autenticarUsuario e cadastrarProfessor travam
+    // sozinhos, so na parte do banco, para o hash de senha nao bloquear as outras requisicoes.
+    std::unique_lock<std::mutex> travarBanco() { return std::unique_lock<std::mutex>(mutexBanco); }
 
     // Verifica se um Espaco esta livre num dado Horario/data (sem conflitos
     // com reservas ja APROVADAS/PENDENTES).

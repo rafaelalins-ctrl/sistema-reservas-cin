@@ -87,6 +87,19 @@ bool Usuario::fazerLogin(const std::string& emailInformado, const std::string& s
         verificarHashSenha(senha, senhaHash);
 }
 
+std::array<unsigned char, 32> Usuario::resumoCredencial(const std::string& senha) const {
+    std::array<unsigned char, 32> resumo{};
+    std::string entrada = senhaHash;
+    entrada.push_back('\0');
+    entrada += senha;
+    unsigned int tamanho = 0;
+    if (EVP_Digest(entrada.data(), entrada.size(), resumo.data(), &tamanho, EVP_sha256(), nullptr) != 1 ||
+        tamanho != resumo.size()) {
+        throw std::runtime_error("Falha ao calcular resumo da credencial com OpenSSL.");
+    }
+    return resumo;
+}
+
 std::string Usuario::gerarHashSenha(const std::string& senha) {
     if (senha.empty() || senha.size() > 1024) {
         throw std::invalid_argument("Senha deve conter entre 1 e 1024 bytes.");
