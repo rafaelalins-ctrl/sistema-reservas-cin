@@ -6,6 +6,7 @@
 #include <sstream>
 
 namespace {
+// sqlite3_column_text devolve nullptr para NULL; aqui vira string vazia.
 std::string textoColuna(sqlite3_stmt* stmt, int coluna) {
     const auto* valor = sqlite3_column_text(stmt, coluna);
     return valor ? reinterpret_cast<const char*>(valor) : "";
@@ -32,6 +33,8 @@ std::vector<std::string> separarSoftwares(const std::string& softwares) {
 }
 }
 
+// Tabela unica para os tres subtipos: a coluna tipo diz qual classe recriar
+// e as colunas especificas dos outros subtipos ficam NULL.
 void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
     if (!obj) throw std::invalid_argument("Espaco nao pode ser nulo.");
 
@@ -54,8 +57,10 @@ void RepositorioEspaco::salvar(std::shared_ptr<Espaco> obj) {
     sqlite3_bind_int(stmt, 6, obj->isAcessivelCadeirante());
     sqlite3_bind_int(stmt, 7, obj->isRequerRetiradaChave());
     sqlite3_bind_int(stmt, 8, obj->isEmManutencao());
+    // tipo() e virtual: cada subclasse informa o proprio valor.
     sqlite3_bind_text(stmt, 9, obj->tipo().c_str(), -1, SQLITE_TRANSIENT);
 
+    // dynamic_pointer_cast devolve nullptr se o objeto nao for daquele subtipo.
     // Cada subtipo preenche seus campos e deixa os campos dos outros tipos nulos.
     if (auto sala = std::dynamic_pointer_cast<SalaAula>(obj)) {
         sqlite3_bind_text(stmt, 10, toString(sala->getTipoQuadro()), -1, SQLITE_TRANSIENT);
@@ -106,6 +111,7 @@ std::shared_ptr<Espaco> RepositorioEspaco::mapearLinha(sqlite3_stmt* stmt) const
     bool manutencao = sqlite3_column_int(stmt, 8) != 0;
     std::string tipo = textoColuna(stmt, 9);
 
+    // Fabrica: cria o objeto concreto certo e o devolve como shared_ptr<Espaco>.
     if (tipo == "SALA_AULA") {
         const auto tipoQuadro = sqlite3_column_type(stmt, 10) == SQLITE_NULL
             ? TipoQuadro::BRANCO : tipoQuadroFromString(textoColuna(stmt, 10));

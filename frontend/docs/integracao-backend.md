@@ -24,13 +24,13 @@ páginas ──▶ @/lib/api (index.ts) ──┬──▶ real/      fetch + ad
 
 Variável `VITE_API_SIMULADA` (em `.env.local`):
 
-| Valor                          | Efeito                                                   |
-| ------------------------------ | -------------------------------------------------------- |
-| _(ausente)_                    | tudo real em desenvolvimento e produção                 |
-| `todos`                        | tudo simulado                                            |
-| `espacos,reservas`             | autenticação real, espaços e reservas simulados          |
-| `espacos`                      | só espaços simulados                                     |
-| _(vazio)_ `VITE_API_SIMULADA=` | tudo real                                                |
+| Valor                          | Efeito                                          |
+| ------------------------------ | ----------------------------------------------- |
+| _(ausente)_                    | tudo real em desenvolvimento e produção         |
+| `todos`                        | tudo simulado                                   |
+| `espacos,reservas`             | autenticação real, espaços e reservas simulados |
+| `espacos`                      | só espaços simulados                            |
+| _(vazio)_ `VITE_API_SIMULADA=` | tudo real                                       |
 
 Com a autenticação simulada, a sessão sobrevive ao recarregar (fica no `sessionStorage`). Com a
 real, a senha do HTTP Basic fica só em memória e recarregar a página pede login de novo (P3).
@@ -39,26 +39,28 @@ O simulado é um chunk separado, carregado sob demanda: quem usa só a API real 
 
 ## Mapa das rotas
 
-| Função em `api`                     | Rota esperada                                                                                   | Situação atual |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `auth.cadastrar(dados)`             | `POST /auth/register`                                                                           | implementado |
-| `auth.entrar(credenciais)`          | `POST /auth/login` (Basic)                                                                      | implementado; retorna `id` e departamento |
-| `espacos.listar(filtros)`           | `GET /espacos?tipo=&bloco=&capacidadeMin=&acessivel=`                                           | implementado; retorna atributos completos |
-| `espacos.obter(id)`                 | `GET /espacos/:id`                                                                              | implementado |
-| `espacos.disponiveis(filtros)`      | `GET /espacos/disponiveis?data=&inicio=&fim=&capacidadeMin=&tipo=&acessivel=`                    | implementado; aceita também `dia` e `capacidade` legados |
-| `espacos.agenda(id, { de, ate })`   | `GET /espacos/:id/agenda?de=&ate=`                                                              | implementado; nomes de professores só para admin |
-| `espacos.criar(entrada)`            | `POST /espacos`                                                                                | implementado (admin) |
-| `espacos.atualizar(id, entrada)`    | `PUT /espacos/:id`                                                                              | implementado (admin) |
-| `espacos.alterarManutencao(id, v)`  | `PATCH /espacos/:id` `{ emManutencao }`                                                         | implementado (admin) |
-| `espacos.remover(id)`               | `DELETE /espacos/:id`                                                                           | implementado (admin; bloqueia espaços com reservas) |
-| `espacos.contarReservasFuturas(id)` | `GET /espacos/:id/reservas-futuras` → `{ total }`                                               | implementado (admin) |
-| `reservas.criar(nova)`              | `POST /reservas`                                                                                | implementado; retorna `Reserva` completa |
-| `reservas.minhas()`                 | `GET /reservas/minhas`                                                                          | implementado; resposta estruturada |
-| `reservas.pendentes()`              | `GET /reservas/pendentes`                                                                       | implementado (admin) |
-| `reservas.listar(filtros)`          | `GET /reservas?status=&espacoId=&professorId=&de=&ate=&pagina=&porPagina=` → `{ itens, total }` | implementado (admin) |
-| `reservas.aprovar(id)`              | `POST /reservas/:id/aprovar`                                                                    | implementado (`204`, admin) |
-| `reservas.rejeitar(id, motivo?)`    | `POST /reservas/:id/rejeitar`                                                                   | implementado (`204`, admin, motivo persistido) |
-| `reservas.cancelar(id, motivo?)`    | `POST /reservas/:id/cancelar`                                                                   | implementado (`204`, professor, motivo persistido) |
+| Função em `api`                     | Rota esperada                                                                                   | Situação atual                                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `auth.cadastrar(dados)`             | `POST /auth/register`                                                                           | implementado                                             |
+| `auth.entrar(credenciais)`          | `POST /auth/login` (Basic)                                                                      | implementado; retorna `id` e departamento                |
+| `auth.atualizarConta(dados)`        | `PUT /usuarios/me`                                                                              | implementado; senha opcional, e-mail não muda            |
+| `auth.excluirConta()`               | `DELETE /usuarios/me`                                                                           | implementado; `409 USUARIO_COM_RESERVAS`, admin `403`    |
+| `espacos.listar(filtros)`           | `GET /espacos?tipo=&bloco=&capacidadeMin=&acessivel=`                                           | implementado; retorna atributos completos                |
+| `espacos.obter(id)`                 | `GET /espacos/:id`                                                                              | implementado                                             |
+| `espacos.disponiveis(filtros)`      | `GET /espacos/disponiveis?data=&inicio=&fim=&capacidadeMin=&tipo=&acessivel=`                   | implementado; aceita também `dia` e `capacidade` legados |
+| `espacos.agenda(id, { de, ate })`   | `GET /espacos/:id/agenda?de=&ate=`                                                              | implementado; nomes de professores só para admin         |
+| `espacos.criar(entrada)`            | `POST /espacos`                                                                                 | implementado (admin)                                     |
+| `espacos.atualizar(id, entrada)`    | `PUT /espacos/:id`                                                                              | implementado (admin)                                     |
+| `espacos.alterarManutencao(id, v)`  | `PATCH /espacos/:id` `{ emManutencao }`                                                         | implementado (admin)                                     |
+| `espacos.remover(id)`               | `DELETE /espacos/:id`                                                                           | implementado (admin; bloqueia espaços com reservas)      |
+| `espacos.contarReservasFuturas(id)` | `GET /espacos/:id/reservas-futuras` → `{ total }`                                               | implementado (admin)                                     |
+| `reservas.criar(nova)`              | `POST /reservas`                                                                                | implementado; retorna `Reserva` completa                 |
+| `reservas.minhas()`                 | `GET /reservas/minhas`                                                                          | implementado; resposta estruturada                       |
+| `reservas.pendentes()`              | `GET /reservas/pendentes`                                                                       | implementado (admin)                                     |
+| `reservas.listar(filtros)`          | `GET /reservas?status=&espacoId=&professorId=&de=&ate=&pagina=&porPagina=` → `{ itens, total }` | implementado (admin)                                     |
+| `reservas.aprovar(id)`              | `POST /reservas/:id/aprovar`                                                                    | implementado (`204`, admin)                              |
+| `reservas.rejeitar(id, motivo?)`    | `POST /reservas/:id/rejeitar`                                                                   | implementado (`204`, admin, motivo persistido)           |
+| `reservas.cancelar(id, motivo?)`    | `POST /reservas/:id/cancelar`                                                                   | implementado (`204`, professor, motivo persistido)       |
 
 ## Adaptadores de compatibilidade
 

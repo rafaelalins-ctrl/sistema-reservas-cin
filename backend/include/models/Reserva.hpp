@@ -33,6 +33,8 @@ public:
              std::shared_ptr<Professor> solicitante, std::shared_ptr<Espaco> espaco,
              std::vector<Horario> horarios);
 
+    // Mudam so o estado em memoria; quem grava no banco e o RepositorioReserva,
+    // que tambem confere se a transicao e permitida (ex.: so aprova se PENDENTE).
     void aprovar();
     void rejeitar();
     void cancelar();
@@ -51,5 +53,4 @@ public:
     void setCriadaEm(std::string valor) { criadaEm = std::move(valor); }
     void setMotivo(std::string valor) { motivo = std::move(valor); }
     void setStatus(StatusReserva novoStatus) { status = novoStatus; }
-    void setHorarios(std::vector<Horario> novosHorarios) { horarios = std::move(novosHorarios); }
 };

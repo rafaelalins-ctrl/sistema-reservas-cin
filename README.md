@@ -1,5 +1,7 @@
 # Sistema de Reservas - Centro de Informática
 
+**Página do projeto:** <https://rafaelalins-ctrl.github.io/sistema-reservas-cin/> (publicada a partir de [`site/`](site/)).
+
 Backend em **C++** (Crow + SQLite) para o sistema de reserva de salas, laboratórios e
 auditórios do CIn, seguindo o padrão **Repository** e um modelo de domínio polimórfico
 para `Usuario` (Administrador/Professor) e `Espaco` (SalaAula/Laboratorio/Auditorio).
@@ -117,6 +119,9 @@ administrador. Não há senha administrativa padrão.
 | GET | `/api/catalogo/espacos` | Catálogo CIn completo, incluindo espaços não reserváveis |
 | POST | `/api/auth/register` | Cadastra professor |
 | POST | `/api/auth/login` | Autentica via HTTP Basic |
+| GET/PUT/DELETE | `/api/usuarios/me` | Consulta, edita (nome, departamento, senha) ou remove a própria conta |
+| GET | `/api/usuarios` | Lista usuários (admin) |
+| GET/DELETE | `/api/usuarios/:id` | Consulta ou remove conta de professor (admin) |
 | GET/POST | `/api/reservas` | Lista paginada (admin) e cria solicitação (professor) |
 | GET | `/api/reservas/minhas` | Reservas do professor autenticado |
 | GET | `/api/reservas/pendentes` | Fila admin |
@@ -146,6 +151,7 @@ local que ofereça HTTPS. Nunca exponha HTTP Basic diretamente em uma rede.
 
 ## Diagrama de classes
 
-O modelo de domínio segue o diagrama fornecido: heranças `Usuario` → `Administrador`/`Professor`,
-`Espaco` → `SalaAula`/`Laboratorio`/`Auditorio`, padrão Repository com `IRepositorio<T>`,
-e `SistemaDeReservas` como orquestrador.
+O modelo de domínio tem heranças `Usuario` → `Administrador`/`Professor` e
+`Espaco` → `SalaAula`/`Laboratorio`/`Auditorio`, padrão Repository com `IRepositorio<T>`
+e `SistemaDeReservas` como orquestrador. O diagrama completo e a explicação dos conceitos de POO
+estão na seção 4 do [RELATORIO.md](RELATORIO.md).

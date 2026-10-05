@@ -11,6 +11,7 @@ import { Disponibilidade } from '@/pages/Disponibilidade'
 import { ErroInesperado } from '@/pages/ErroInesperado'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
+import { MinhaConta } from '@/pages/MinhaConta'
 import { MinhasReservas } from '@/pages/MinhasReservas'
 import { NotFound } from '@/pages/NotFound'
 import { Solicitacoes } from '@/pages/Solicitacoes'
@@ -30,6 +31,11 @@ export const router = createBrowserRouter([
           { path: '/', element: <Home /> },
           { path: '/login', element: <Login /> },
           { path: '/cadastro', element: <Cadastro /> },
+          {
+            path: '/conta',
+            element: <RequireAuth />,
+            children: [{ index: true, element: <MinhaConta /> }],
+          },
           {
             path: '/app',
             element: <RequireAuth />,

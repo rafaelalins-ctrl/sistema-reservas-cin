@@ -1,6 +1,9 @@
 #include "models/Enums.hpp"
 #include <stdexcept>
 
+// Os textos sao os mesmos gravados no banco e trocados com o frontend;
+// mudar um deles quebra dados ja salvos.
+
 const char* toString(BlocoCIn bloco) {
     switch (bloco) {
         case BlocoCIn::BLOCO_A: return "BLOCO_A";

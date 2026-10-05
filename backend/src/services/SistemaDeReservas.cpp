@@ -1,55 +1,13 @@
 #include "services/SistemaDeReservas.hpp"
 #include "models/Professor.hpp"
+#include "util/Datas.hpp"
+#include <openssl/crypto.h>
 #include <algorithm>
-#include <ctime>
 #include <cctype>
-#include <iomanip>
-#include <sstream>
+#include <stdexcept>
 
 namespace {
-DiaSemana diaDaData(const std::string& data) {
-    std::tm partes{};
-    std::istringstream entrada(data);
-    entrada >> std::get_time(&partes, "%Y-%m-%d");
-    if (entrada.fail() || entrada.peek() != std::char_traits<char>::eof()) {
-        throw std::invalid_argument("Data deve usar o formato AAAA-MM-DD.");
-    }
-    // Meio-dia evita que a conversao de fuso altere o dia em horarios de verao.
-    partes.tm_hour = 12;
-    partes.tm_isdst = -1;
-    if (std::mktime(&partes) == -1) throw std::invalid_argument("Data invalida.");
-    char normalizada[11];
-    std::strftime(normalizada, sizeof(normalizada), "%Y-%m-%d", &partes);
-    if (data != normalizada) throw std::invalid_argument("Data invalida.");
-    return static_cast<DiaSemana>((partes.tm_wday + 6) % 7);
-}
-
-std::string proximaData(const std::string& data) {
-    std::tm partes{};
-    std::istringstream entrada(data);
-    entrada >> std::get_time(&partes, "%Y-%m-%d");
-    partes.tm_hour = 12;
-    partes.tm_mday += 1;
-    partes.tm_isdst = -1;
-    if (std::mktime(&partes) == -1) throw std::invalid_argument("Data invalida.");
-    char proxima[11];
-    std::strftime(proxima, sizeof(proxima), "%Y-%m-%d", &partes);
-    return proxima;
-}
-
-std::string dataHojeLocal() {
-    const std::time_t agora = std::time(nullptr);
-    std::tm local{};
-#ifdef _WIN32
-    localtime_s(&local, &agora);
-#else
-    localtime_r(&agora, &local);
-#endif
-    char data[11];
-    std::strftime(data, sizeof(data), "%Y-%m-%d", &local);
-    return data;
-}
-
+// Remove espacos e quebras de linha das pontas.
 std::string aparar(const std::string& valor) {
     const auto inicio = valor.find_first_not_of(" \t\r\n");
     if (inicio == std::string::npos) return {};
@@ -66,6 +24,7 @@ std::string normalizarEmail(const std::string& email) {
 }
 }
 
+// Reservas canceladas ou rejeitadas nao ocupam o espaco; pendentes e aprovadas sim.
 bool SistemaDeReservas::verificarDisponibilidade(const Espaco& e, const Horario& h,
                                                    const std::string& data, int idReservaIgnorada) {
     auto reservasExistentes = repoReservas.listarPorEspacoEData(
@@ -102,6 +61,7 @@ bool SistemaDeReservas::processarNovaReserva(
     if (!r || !r->getEspaco() || !r->getSolicitante()) return false;
     if (r->getDataFim() < r->getDataInicio() || r->getHorarios().empty()) return false;
 
+    // Chamada polimorfica: a regra depende do tipo real do solicitante.
     if (!r->getSolicitante()->validarPermissaoReserva(*r->getEspaco())) {
         return false;
     }
@@ -113,14 +73,16 @@ bool SistemaDeReservas::processarNovaReserva(
     return true;
 }
 
+// Percorre cada dia do periodo e confere os horarios semanais que caem naquele dia.
 bool SistemaDeReservas::horariosDisponiveis(
     const Espaco& espaco, const std::vector<Horario>& horarios,
     const std::string& dataInicio, const std::string& dataFim, int idReservaIgnorada,
     std::vector<ConflitoReserva>* conflitos) {
     if (conflitos) conflitos->clear();
     if (horarios.empty() || dataFim < dataInicio) return false;
-    diaDaData(dataInicio);
-    diaDaData(dataFim);
+    // Valida o formato das datas (lanca std::invalid_argument se invalidas).
+    Datas::diaDaData(dataInicio);
+    Datas::diaDaData(dataFim);
 
     // Um pedido nao pode ter dois horarios sobrepostos no mesmo dia da semana.
     for (std::size_t i = 0; i < horarios.size(); ++i) {
@@ -131,8 +93,8 @@ bool SistemaDeReservas::horariosDisponiveis(
 
     // Cada linha semanal precisa acontecer ao menos uma vez dentro do periodo.
     std::vector<bool> horarioOcorreu(horarios.size(), false);
-    for (std::string data = dataInicio; data <= dataFim; data = proximaData(data)) {
-        const auto dia = diaDaData(data);
+    for (std::string data = dataInicio; data <= dataFim; data = Datas::proximaData(data)) {
+        const auto dia = Datas::diaDaData(data);
         for (std::size_t i = 0; i < horarios.size(); ++i) {
             if (horarios[i].getDiaSemana() == dia) {
                 horarioOcorreu[i] = true;
@@ -155,11 +117,33 @@ bool SistemaDeReservas::horariosDisponiveis(
 std::shared_ptr<Usuario> SistemaDeReservas::autenticarUsuario(
     const std::string& email, const std::string& senha) {
     const auto emailNormalizado = normalizarEmail(email);
-    auto usuario = repoUsuarios.buscarPorEmail(emailNormalizado);
-    if (!usuario || !usuario->fazerLogin(emailNormalizado, senha)) return nullptr;
+    std::shared_ptr<Usuario> usuario;
+    {
+        const auto trava = travarBanco();
+        usuario = repoUsuarios.buscarPorEmail(emailNormalizado);
+    }
+    if (!usuario || senha.empty() || senha.size() > 1024) return nullptr;
+
+    // O HTTP Basic reenvia a senha a cada requisicao. O PBKDF2 roda fora da trava do banco
+    // e so na primeira vez: depois, um resumo rapido confirma a mesma senha por alguns minutos.
+    const auto resumo = usuario->resumoCredencial(senha);
+    const auto agora = std::chrono::steady_clock::now();
+    {
+        std::lock_guard<std::mutex> trava(mutexCredenciais);
+        const auto encontrada = credenciaisVerificadas.find(emailNormalizado);
+        if (encontrada != credenciaisVerificadas.end() && encontrada->second.expiraEm > agora &&
+            CRYPTO_memcmp(encontrada->second.resumo.data(), resumo.data(), resumo.size()) == 0) {
+            return usuario;
+        }
+    }
+
+    if (!usuario->fazerLogin(emailNormalizado, senha)) return nullptr;
+    std::lock_guard<std::mutex> trava(mutexCredenciais);
+    credenciaisVerificadas[emailNormalizado] = {resumo, agora + validadeCredencial};
     return usuario;
 }
 
+// Validacao simples de email: um unico @, algo antes e um ponto no dominio.
 bool SistemaDeReservas::cadastrarProfessor(
     const std::string& nome, const std::string& email,
     const std::string& senha, const std::string& departamento) {
@@ -180,19 +164,49 @@ bool SistemaDeReservas::cadastrarProfessor(
     }
 
     const auto senhaHash = Usuario::gerarHashSenha(senha);
+    const auto trava = travarBanco();
     return repoUsuarios.cadastrarProfessor(
         nomeNormalizado, emailNormalizado, senhaHash, departamentoNormalizado);
 }
 
-bool SistemaDeReservas::alterarHorarioReserva(int idReserva, std::vector<Horario> novosHorarios) {
-    auto reserva = repoReservas.buscar(idReserva);
-    if (!reserva || !reserva->getEspaco() ||
-        !horariosDisponiveis(*reserva->getEspaco(), novosHorarios,
-                             reserva->getDataInicio(), reserva->getDataFim(), idReserva)) return false;
+bool SistemaDeReservas::atualizarUsuario(
+    int idUsuario, const std::string& nome,
+    const std::string& departamento, const std::string& novaSenha) {
+    const auto nomeNormalizado = aparar(nome);
+    const auto departamentoNormalizado = aparar(departamento);
+    if (nomeNormalizado.empty()) throw std::invalid_argument("Informe o nome.");
+    if (!novaSenha.empty() && (novaSenha.size() < 8 || novaSenha.size() > 1024)) {
+        throw std::invalid_argument("A senha deve conter entre 8 e 1024 caracteres.");
+    }
 
-    repoReservas.atualizarHorarios(idReserva, novosHorarios);
-    reserva->setHorarios(std::move(novosHorarios));
+    // Como no cadastro, o PBKDF2 roda antes de pegar a trava do banco.
+    const auto novoHash = novaSenha.empty() ? std::string() : Usuario::gerarHashSenha(novaSenha);
+    const auto trava = travarBanco();
+    auto usuario = repoUsuarios.buscar(idUsuario);
+    if (!usuario) return false;
+
+    if (auto professor = std::dynamic_pointer_cast<Professor>(usuario)) {
+        if (departamentoNormalizado.empty()) throw std::invalid_argument("Informe o departamento.");
+        professor->setDepartamento(departamentoNormalizado);
+    }
+    usuario->setNome(nomeNormalizado);
+    if (!novoHash.empty()) usuario->setSenhaHash(novoHash);
+    repoUsuarios.atualizar(usuario);
+    // Nao e preciso limpar credenciaisVerificadas: o resumo depende do hash salvo,
+    // entao a senha antiga deixa de valer assim que o novo hash e gravado.
     return true;
+}
+
+ResultadoRemocaoUsuario SistemaDeReservas::removerUsuario(int idUsuario) {
+    auto usuario = repoUsuarios.buscar(idUsuario);
+    if (!usuario) return ResultadoRemocaoUsuario::NAO_ENCONTRADO;
+    if (!std::dynamic_pointer_cast<Professor>(usuario)) return ResultadoRemocaoUsuario::ADMINISTRADOR;
+    if (repoUsuarios.possuiReservas(idUsuario)) return ResultadoRemocaoUsuario::POSSUI_RESERVAS;
+
+    repoUsuarios.remover(idUsuario);
+    std::lock_guard<std::mutex> trava(mutexCredenciais);
+    credenciaisVerificadas.erase(usuario->getEmail());
+    return ResultadoRemocaoUsuario::REMOVIDO;
 }
 
 bool SistemaDeReservas::aprovarReserva(int idReserva) {
@@ -205,7 +219,7 @@ bool SistemaDeReservas::rejeitarReserva(int idReserva, const std::string& motivo
 }
 
 bool SistemaDeReservas::cancelarReserva(int idReserva, int idProfessor, const std::string& motivo) {
-    return repoReservas.cancelarReserva(idReserva, idProfessor, dataHojeLocal(), aparar(motivo));
+    return repoReservas.cancelarReserva(idReserva, idProfessor, Datas::hoje(), aparar(motivo));
 }
 
 void SistemaDeReservas::removerEspacoDoSistema(int idEspaco) {

@@ -21,6 +21,14 @@
 #include "models/Professor.hpp"
 #include "models/SalaAula.hpp"
 #include "models/Usuario.hpp"
+#include "util/Datas.hpp"
+
+// ==========================================
+// PONTO DE ENTRADA E API REST (Crow)
+// ==========================================
+// Cada rota: autentica (HTTP Basic), confere o perfil com dynamic_pointer_cast,
+// trava o banco, chama o SistemaDeReservas/repositorios e serializa a resposta
+// em JSON. Erros seguem o formato {mensagem, codigo, campo?} de respostaErro.
 
 // Aplica o schema.sql na conexao (idempotente: usa CREATE TABLE IF NOT EXISTS).
 static void aplicarSchema(sqlite3* db, const std::string& caminhoSchema) {
@@ -40,6 +48,7 @@ static void aplicarSchema(sqlite3* db, const std::string& caminhoSchema) {
     }
 }
 
+// Migracao simples: adiciona a coluna em bancos criados antes dela existir.
 static void garantirColuna(sqlite3* db, const std::string& tabela,
                            const std::string& coluna, const std::string& definicao) {
     const std::string consulta = "PRAGMA table_info(" + tabela + ");";
@@ -64,71 +73,8 @@ static void garantirColuna(sqlite3* db, const std::string& tabela,
     }
 }
 
-static DiaSemana diaDaData(const std::string& data) {
-    std::tm dataSeparada{};
-    std::istringstream entrada(data);
-    entrada >> std::get_time(&dataSeparada, "%Y-%m-%d");
-    if (entrada.fail() || entrada.peek() != std::char_traits<char>::eof()) {
-        throw std::invalid_argument("Data deve usar o formato AAAA-MM-DD.");
-    }
-
-    dataSeparada.tm_hour = 12;
-    dataSeparada.tm_isdst = -1;
-    if (std::mktime(&dataSeparada) == -1) {
-        throw std::invalid_argument("Data invalida.");
-    }
-
-    char dataNormalizada[11];
-    std::strftime(dataNormalizada, sizeof(dataNormalizada), "%Y-%m-%d", &dataSeparada);
-    if (data != dataNormalizada) {
-        throw std::invalid_argument("Data invalida.");
-    }
-
-    return static_cast<DiaSemana>((dataSeparada.tm_wday + 6) % 7);
-}
-
-static std::string proximaData(const std::string& data) {
-    std::tm partes{};
-    std::istringstream entrada(data);
-    entrada >> std::get_time(&partes, "%Y-%m-%d");
-    if (entrada.fail() || entrada.peek() != std::char_traits<char>::eof()) {
-        throw std::invalid_argument("Data deve usar o formato AAAA-MM-DD.");
-    }
-    partes.tm_hour = 12;
-    partes.tm_mday += 1;
-    partes.tm_isdst = -1;
-    if (std::mktime(&partes) == -1) throw std::invalid_argument("Data invalida.");
-    char proxima[11];
-    std::strftime(proxima, sizeof(proxima), "%Y-%m-%d", &partes);
-    return proxima;
-}
-
-static std::string dataHoje() {
-    const std::time_t agora = std::time(nullptr);
-    std::tm local{};
-#ifdef _WIN32
-    localtime_s(&local, &agora);
-#else
-    localtime_r(&agora, &local);
-#endif
-    char data[11];
-    std::strftime(data, sizeof(data), "%Y-%m-%d", &local);
-    return data;
-}
-
-static std::string dataHoraUtc() {
-    const std::time_t agora = std::time(nullptr);
-    std::tm utc{};
-#ifdef _WIN32
-    gmtime_s(&utc, &agora);
-#else
-    gmtime_r(&agora, &utc);
-#endif
-    std::ostringstream resultado;
-    resultado << std::put_time(&utc, "%Y-%m-%dT%H:%M:%SZ");
-    return resultado.str();
-}
-
+// Le o cabecalho "Authorization: Basic <base64(email:senha)>".
+// Retorna nullopt se o formato for invalido.
 static std::optional<std::pair<std::string, std::string>> decodificarBasic(const std::string& cabecalho) {
     constexpr std::string_view prefixo = "Basic ";
     if (cabecalho.compare(0, prefixo.size(), prefixo) != 0) return std::nullopt;
@@ -174,12 +120,14 @@ static std::optional<std::pair<std::string, std::string>> decodificarBasic(const
     return std::make_pair(decodificado.substr(0, separador), decodificado.substr(separador + 1));
 }
 
+// Usuario autenticado da requisicao, ou nullptr. Trava o banco por conta propria.
 static std::shared_ptr<Usuario> autenticar(const crow::request& req, SistemaDeReservas& sistema) {
     const auto credenciais = decodificarBasic(req.get_header_value("Authorization"));
     if (!credenciais) return nullptr;
     return sistema.autenticarUsuario(credenciais->first, credenciais->second);
 }
 
+// 401 com WWW-Authenticate, como exige o HTTP Basic.
 static crow::response respostaNaoAutorizada() {
     crow::json::wvalue corpo;
     corpo["mensagem"] = "Autenticacao necessaria.";
@@ -191,15 +139,7 @@ static crow::response respostaNaoAutorizada() {
     return resposta;
 }
 
-static void responderJson(crow::response& resposta, int status, const std::string& mensagem) {
-    crow::json::wvalue corpo;
-    corpo["mensagem"] = mensagem;
-    resposta.code = status;
-    resposta.set_header("Content-Type", "application/json; charset=utf-8");
-    resposta.body = corpo.dump();
-    resposta.end();
-}
-
+// Corpo de erro padrao da API; campo indica qual entrada causou o erro.
 static crow::response respostaErro(int status, const std::string& codigo,
                                    const std::string& mensagem, const std::string& campo = "") {
     crow::json::wvalue corpo;
@@ -212,6 +152,7 @@ static crow::response respostaErro(int status, const std::string& codigo,
     return resposta;
 }
 
+// Identificacoes de espaco sao comparadas e salvas em maiusculas.
 static std::string normalizarIdentificacao(const std::string& valor) {
     std::string normalizada = valor;
     std::transform(normalizada.begin(), normalizada.end(), normalizada.begin(), [](unsigned char caractere) {
@@ -220,6 +161,7 @@ static std::string normalizarIdentificacao(const std::string& valor) {
     return normalizada;
 }
 
+// 409 com a lista de datas/horarios que ja estao ocupados.
 static crow::response respostaConflitos(const std::vector<ConflitoReserva>& conflitos) {
     std::vector<crow::json::wvalue> lista;
     for (const auto& conflito : conflitos) {
@@ -238,6 +180,7 @@ static crow::response respostaConflitos(const std::vector<ConflitoReserva>& conf
     return crow::response(409, corpo);
 }
 
+// Corpo opcional {"motivo": "..."} de aprovar/rejeitar/cancelar.
 static std::string lerMotivoOpcional(const crow::request& req) {
     if (req.body.empty()) return {};
     const auto corpo = crow::json::load(req.body);
@@ -251,6 +194,8 @@ static std::string lerMotivoOpcional(const crow::request& req) {
     return static_cast<std::string>(corpo["motivo"]);
 }
 
+// Campos comuns vem dos getters de Espaco; descricao usa o metodo virtual.
+// Os campos especificos dependem do subtipo, descoberto com dynamic_pointer_cast.
 static crow::json::wvalue serializarEspaco(const std::shared_ptr<Espaco>& espaco) {
     crow::json::wvalue item;
     item["id"] = espaco->getId();
@@ -281,6 +226,8 @@ static crow::json::wvalue serializarEspaco(const std::shared_ptr<Espaco>& espaco
     return item;
 }
 
+// Leitores de campos JSON: devolvem o padrao se a chave faltar e
+// lancam std::invalid_argument se o tipo estiver errado.
 static std::string lerTexto(const crow::json::rvalue& corpo, const char* chave,
                             const std::string& padrao = "") {
     if (!corpo.has(chave)) return padrao;
@@ -311,6 +258,7 @@ static bool lerBooleano(const crow::json::rvalue& corpo, const char* chave, bool
     return corpo[chave].b();
 }
 
+// Monta o subtipo de Espaco indicado em "tipo" a partir do corpo de POST/PUT.
 static std::shared_ptr<Espaco> construirEspaco(const crow::json::rvalue& corpo, int id = 0) {
     if (!corpo || corpo.t() != crow::json::type::Object) {
         throw std::invalid_argument("O corpo deve ser um objeto JSON.");
@@ -361,6 +309,7 @@ static std::shared_ptr<Espaco> construirEspaco(const crow::json::rvalue& corpo, 
     throw std::invalid_argument("Tipo de espaco invalido.");
 }
 
+// Evita dois espacos com a mesma identificacao (ignorarId: o proprio espaco no PUT).
 static bool identificacaoEmUso(SistemaDeReservas& sistema, const std::string& identificacao,
                                int ignorarId = 0) {
     for (const auto& espaco : sistema.getRepositorioEspacos().listarTodos()) {
@@ -370,6 +319,7 @@ static bool identificacaoEmUso(SistemaDeReservas& sistema, const std::string& id
     return false;
 }
 
+// O catalogo usa letras de bloco; o que nao for A-E vira AREA_2.
 static BlocoCIn blocoMock(const std::string& bloco) {
     if (bloco == "A") return BlocoCIn::BLOCO_A;
     if (bloco == "B") return BlocoCIn::BLOCO_B;
@@ -379,6 +329,8 @@ static BlocoCIn blocoMock(const std::string& bloco) {
     return BlocoCIn::AREA_2;
 }
 
+// Na primeira execucao (tabela de espacos vazia), importa salas, laboratorios e
+// auditorios do catalogo do CIn. Capacidade e atributos sao valores de demonstracao.
 static void semearEspacosMock(SistemaDeReservas& sistema, sqlite3* catalogoDb) {
     auto& repositorio = sistema.getRepositorioEspacos();
     if (!repositorio.listarTodos().empty()) return;
@@ -438,6 +390,35 @@ static void semearEspacosMock(SistemaDeReservas& sistema, sqlite3* catalogoDb) {
     std::cout << carregados << " espacos reservaveis mock carregados do catalogo CIn.\n";
 }
 
+// Dados publicos da conta; o hash da senha nunca sai na resposta.
+static crow::json::wvalue serializarUsuario(const std::shared_ptr<Usuario>& usuario) {
+    crow::json::wvalue item;
+    item["id"] = usuario->getId();
+    item["nome"] = usuario->getNome();
+    item["email"] = usuario->getEmail();
+    item["tipo"] = usuario->tipo();
+    if (auto professor = std::dynamic_pointer_cast<Professor>(usuario)) {
+        item["departamento"] = professor->getDepartamento();
+    }
+    return item;
+}
+
+static crow::response respostaRemocaoUsuario(ResultadoRemocaoUsuario resultado) {
+    switch (resultado) {
+    case ResultadoRemocaoUsuario::REMOVIDO:
+        return crow::response(204);
+    case ResultadoRemocaoUsuario::NAO_ENCONTRADO:
+        return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+    case ResultadoRemocaoUsuario::ADMINISTRADOR:
+        return respostaErro(403, "SEM_PERMISSAO", "Contas de administrador nao podem ser removidas.");
+    case ResultadoRemocaoUsuario::POSSUI_RESERVAS:
+        return respostaErro(409, "USUARIO_COM_RESERVAS",
+                            "A conta possui reservas vinculadas e nao pode ser removida.");
+    }
+    return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover o usuario.");
+}
+
+// Reserva com resumo do espaco, do professor e dos horarios semanais.
 static crow::json::wvalue serializarReserva(const std::shared_ptr<Reserva>& reserva) {
     crow::json::wvalue item;
     item["id"] = reserva->getId();
@@ -474,6 +455,7 @@ static crow::json::wvalue serializarReserva(const std::shared_ptr<Reserva>& rese
 }
 
 int main() {
+    // Banco de reservas (leitura/escrita), criado a partir do schema se nao existir.
     sqlite3* db = nullptr;
     if (sqlite3_open("database/reservas.db", &db) != SQLITE_OK) {
         std::cerr << "Erro ao abrir banco: " << sqlite3_errmsg(db) << std::endl;
@@ -490,6 +472,7 @@ int main() {
         return 1;
     }
 
+    // Catalogo oficial de espacos do CIn, aberto so para leitura.
     sqlite3* catalogoDb = nullptr;
     if (sqlite3_open_v2("database/cin_2026.db", &catalogoDb, SQLITE_OPEN_READONLY, nullptr) != SQLITE_OK) {
         std::cerr << "Erro ao abrir catalogo CIn: " << sqlite3_errmsg(catalogoDb) << std::endl;
@@ -500,6 +483,7 @@ int main() {
 
     SistemaDeReservas sistema(db);
 
+    // Primeiro administrador vem de variaveis de ambiente; nao existe senha padrao.
     const char* emailAdmin = std::getenv("CIN_ADMIN_EMAIL");
     const char* senhaAdmin = std::getenv("CIN_ADMIN_SENHA");
     if ((emailAdmin == nullptr) != (senhaAdmin == nullptr)) {
@@ -548,10 +532,11 @@ int main() {
     crow::SimpleApp app;
 
     // ---------------------------------------------
-    // GET /api/espacos - lista todos os espacos
+    // GET /api/espacos?tipo=&bloco=&capacidadeMin=&acessivel= - lista e filtra (publico)
     // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
+        const auto trava = sistema.travarBanco();
         const char* tipo = req.url_params.get("tipo");
         const char* bloco = req.url_params.get("bloco");
         const char* capacidade = req.url_params.get("capacidadeMin");
@@ -587,13 +572,20 @@ int main() {
         return crow::response(resposta);
     });
 
+    // ---------------------------------------------
+    // GET /api/espacos/:id - detalha um espaco (publico)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::GET)
     ([&sistema](int id) {
+        const auto trava = sistema.travarBanco();
         auto espaco = sistema.getRepositorioEspacos().buscar(id);
         if (!espaco) return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
         return crow::response(serializarEspaco(espaco));
     });
 
+    // ---------------------------------------------
+    // POST /api/espacos - cadastra espaco (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -601,6 +593,7 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem cadastrar espacos.");
         }
+        const auto trava = sistema.travarBanco();
         const auto corpo = crow::json::load(req.body);
         try {
             auto espaco = construirEspaco(corpo);
@@ -618,6 +611,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // PUT /api/espacos/:id - substitui os dados do espaco; o tipo nao muda (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::PUT)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -625,13 +621,14 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem editar espacos.");
         }
+        const auto trava = sistema.travarBanco();
         auto existente = sistema.getRepositorioEspacos().buscar(id);
         if (!existente) return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
         const auto corpo = crow::json::load(req.body);
         try {
             auto atualizado = construirEspaco(corpo, id);
             if (atualizado->tipo() != existente->tipo()) {
-                return respostaErro(409, "VALIDACAO", "O tipo do espaco nao pode ser alterado.", "tipo");
+                return respostaErro(400, "VALIDACAO", "O tipo do espaco nao pode ser alterado.", "tipo");
             }
             if (identificacaoEmUso(sistema, atualizado->getIdentificacao(), id)) {
                 return respostaErro(409, "IDENTIFICACAO_DUPLICADA", "Ja existe um espaco com essa identificacao.", "identificacao");
@@ -645,6 +642,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // PATCH /api/espacos/:id - liga/desliga manutencao (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::PATCH)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -652,6 +652,7 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem alterar a manutencao.");
         }
+        const auto trava = sistema.travarBanco();
         auto espaco = sistema.getRepositorioEspacos().buscar(id);
         if (!espaco) return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
         const auto corpo = crow::json::load(req.body);
@@ -669,6 +670,9 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // DELETE /api/espacos/:id - remove espaco sem reservas (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>").methods(crow::HTTPMethod::Delete)
     ([&sistema, db](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -676,6 +680,7 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem remover espacos.");
         }
+        const auto trava = sistema.travarBanco();
         if (!sistema.getRepositorioEspacos().buscar(id)) {
             return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
         }
@@ -697,6 +702,10 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // GET /api/espacos/:id/reservas-futuras - quantas reservas pendentes ou
+    // aprovadas ainda nao terminaram (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>/reservas-futuras").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
@@ -704,13 +713,14 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem consultar reservas futuras.");
         }
+        const auto trava = sistema.travarBanco();
         if (!sistema.getRepositorioEspacos().buscar(id)) {
             return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
         }
         int total = 0;
         for (const auto& reserva : sistema.getRepositorioReservas().listarTodos()) {
             const auto status = reserva->getStatus();
-            if (reserva->getEspaco()->getId() == id && reserva->getDataFim() >= dataHoje() &&
+            if (reserva->getEspaco()->getId() == id && reserva->getDataFim() >= Datas::hoje() &&
                 (status == StatusReserva::PENDENTE || status == StatusReserva::APROVADA)) ++total;
         }
         crow::json::wvalue corpo;
@@ -718,10 +728,15 @@ int main() {
         return crow::response(corpo);
     });
 
+    // ---------------------------------------------
+    // GET /api/espacos/:id/agenda?de=&ate= - ocupacoes dia a dia
+    // (professor so ve horarios; admin ve tambem quem reservou)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/<int>/agenda").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req, int id) {
         auto usuario = autenticar(req, sistema);
         if (!usuario) return respostaNaoAutorizada();
+        const auto trava = sistema.travarBanco();
         auto espaco = sistema.getRepositorioEspacos().buscar(id);
         if (!espaco) return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
         const char* de = req.url_params.get("de");
@@ -731,16 +746,16 @@ int main() {
         try {
             const std::string inicio(de);
             const std::string fim(ate);
-            diaDaData(inicio);
-            diaDaData(fim);
+            Datas::diaDaData(inicio);
+            Datas::diaDaData(fim);
             if (fim < inicio) return respostaErro(400, "VALIDACAO", "ate deve ser igual ou posterior a de.");
 
             const bool mostrarProfessor = static_cast<bool>(std::dynamic_pointer_cast<Administrador>(usuario));
             std::vector<crow::json::wvalue> ocupacoes;
             std::size_t dias = 0;
-            for (std::string data = inicio; data <= fim; data = proximaData(data)) {
+            for (std::string data = inicio; data <= fim; data = Datas::proximaData(data)) {
                 if (++dias > 366) return respostaErro(400, "VALIDACAO", "O periodo da agenda nao pode exceder 366 dias.");
-                const auto dia = diaDaData(data);
+                const auto dia = Datas::diaDaData(data);
                 for (const auto& reserva : sistema.getRepositorioReservas().listarPorEspacoEData(id, data)) {
                     const auto status = reserva->getStatus();
                     if (status != StatusReserva::PENDENTE && status != StatusReserva::APROVADA) continue;
@@ -773,14 +788,18 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // GET /api/catalogo/espacos - catalogo CIn completo, inclusive nao reservaveis
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/catalogo/espacos").methods(crow::HTTPMethod::GET)
-    ([catalogoDb]() {
+    ([&sistema, catalogoDb]() {
+        const auto trava = sistema.travarBanco();
         const char* sql =
             "SELECT id, codigo, nome, tipo, bloco, andar, observacao "
             "FROM espacos ORDER BY bloco, codigo, nome;";
         sqlite3_stmt* stmt = nullptr;
         if (sqlite3_prepare_v2(catalogoDb, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-            return crow::response(500, sqlite3_errmsg(catalogoDb));
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel listar o catalogo.");
         }
 
         crow::json::wvalue resposta;
@@ -806,89 +825,15 @@ int main() {
             lista.push_back(std::move(item));
         }
         sqlite3_finalize(stmt);
-        if (resultado != SQLITE_DONE) return crow::response(500, sqlite3_errmsg(catalogoDb));
+        if (resultado != SQLITE_DONE) return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel listar o catalogo.");
 
         resposta = std::move(lista);
         return crow::response(resposta);
     });
 
-    CROW_ROUTE(app, "/api/catalogo/espacos/<int>/agenda").methods(crow::HTTPMethod::GET)
-    ([catalogoDb, db](const crow::request& req, int idEspaco) {
-        const char* parametroData = req.url_params.get("data");
-        if (!parametroData) return crow::response(400, "Informe a data no formato AAAA-MM-DD.");
-
-        const std::string data(parametroData);
-        DiaSemana dia;
-        try {
-            dia = diaDaData(data);
-        } catch (const std::exception& erro) {
-            return crow::response(400, erro.what());
-        }
-
-        sqlite3_stmt* espacoStmt = nullptr;
-        if (sqlite3_prepare_v2(catalogoDb,
-                "SELECT codigo, nome FROM espacos WHERE id = ?;", -1, &espacoStmt, nullptr) != SQLITE_OK) {
-            return crow::response(500, sqlite3_errmsg(catalogoDb));
-        }
-        sqlite3_bind_int(espacoStmt, 1, idEspaco);
-        const int resultadoEspaco = sqlite3_step(espacoStmt);
-        if (resultadoEspaco != SQLITE_ROW) {
-            sqlite3_finalize(espacoStmt);
-            if (resultadoEspaco == SQLITE_DONE) return crow::response(404, "Espaco nao encontrado.");
-            return crow::response(500, sqlite3_errmsg(catalogoDb));
-        }
-
-        const auto textoEspaco = [espacoStmt](int coluna) {
-            const auto* valor = sqlite3_column_text(espacoStmt, coluna);
-            return valor ? reinterpret_cast<const char*>(valor) : "";
-        };
-        const std::string codigo = textoEspaco(0);
-        const std::string nome = textoEspaco(1);
-        sqlite3_finalize(espacoStmt);
-        const std::string identificacao = codigo.empty() ? nome : codigo;
-
-        const char* sql =
-            "SELECT r.id, r.data_inicio, r.data_fim, r.status, "
-            "h.dia_semana, h.hora_inicio_min, h.hora_fim_min "
-            "FROM reservas r "
-            "JOIN espacos e ON e.id = r.id_espaco "
-            "JOIN reserva_horarios h ON h.id_reserva = r.id "
-            "WHERE e.identificacao = ? AND r.data_inicio <= ? AND r.data_fim >= ? "
-            "AND h.dia_semana = ? AND r.status IN ('PENDENTE', 'APROVADA') "
-            "ORDER BY h.hora_inicio_min, h.hora_fim_min;";
-        sqlite3_stmt* agendaStmt = nullptr;
-        if (sqlite3_prepare_v2(db, sql, -1, &agendaStmt, nullptr) != SQLITE_OK) {
-            return crow::response(500, sqlite3_errmsg(db));
-        }
-        sqlite3_bind_text(agendaStmt, 1, identificacao.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(agendaStmt, 2, data.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(agendaStmt, 3, data.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(agendaStmt, 4, toString(dia), -1, SQLITE_TRANSIENT);
-
-        std::vector<crow::json::wvalue> horarios;
-        int resultado = SQLITE_OK;
-        while ((resultado = sqlite3_step(agendaStmt)) == SQLITE_ROW) {
-            crow::json::wvalue item;
-            item["idReserva"] = sqlite3_column_int(agendaStmt, 0);
-            item["dataInicio"] = reinterpret_cast<const char*>(sqlite3_column_text(agendaStmt, 1));
-            item["dataFim"] = reinterpret_cast<const char*>(sqlite3_column_text(agendaStmt, 2));
-            item["status"] = reinterpret_cast<const char*>(sqlite3_column_text(agendaStmt, 3));
-            item["dia"] = reinterpret_cast<const char*>(sqlite3_column_text(agendaStmt, 4));
-            item["inicioMin"] = sqlite3_column_int(agendaStmt, 5);
-            item["fimMin"] = sqlite3_column_int(agendaStmt, 6);
-            horarios.push_back(std::move(item));
-        }
-        sqlite3_finalize(agendaStmt);
-        if (resultado != SQLITE_DONE) return crow::response(500, sqlite3_errmsg(db));
-
-        crow::json::wvalue resposta;
-        resposta["data"] = data;
-        resposta["horarios"] = std::move(horarios);
-        return crow::response(resposta);
-    });
-
     // ---------------------------------------------
-    // GET /api/espacos/disponiveis?data=&inicio=&fim=&capacidadeMin=
+    // GET /api/espacos/disponiveis?data=&inicio=&fim=&capacidadeMin= - espacos
+    // livres naquele dia e intervalo (inicio/fim em minutos desde meia-noite)
     // ---------------------------------------------
     CROW_ROUTE(app, "/api/espacos/disponiveis").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
@@ -905,9 +850,10 @@ int main() {
             return respostaErro(400, "VALIDACAO", "Parametros 'inicio', 'fim' e 'data' sao obrigatorios.");
         }
 
+        const auto trava = sistema.travarBanco();
         std::vector<std::shared_ptr<Espaco>> disponiveis;
         try {
-            const auto diaSemana = diaDaData(data);
+            const auto diaSemana = Datas::diaDaData(data);
             if (dia && diaSemanaFromString(dia) != diaSemana) {
                 return respostaErro(400, "VALIDACAO", "O dia da semana nao corresponde a data informada.", "dia");
             }
@@ -933,6 +879,9 @@ int main() {
         return crow::response(resposta);
     });
 
+    // ---------------------------------------------
+    // POST /api/auth/register - cria conta de professor (publico)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/auth/register").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req) {
         auto body = crow::json::load(req.body);
@@ -967,30 +916,138 @@ int main() {
         }
     });
 
+    // ---------------------------------------------
+    // POST /api/auth/login - confere as credenciais Basic e devolve o perfil
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/auth/login").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
         if (!usuario) return respostaNaoAutorizada();
-
-        crow::json::wvalue resposta;
-        resposta["id"] = usuario->getId();
-        resposta["nome"] = usuario->getNome();
-        resposta["email"] = usuario->getEmail();
-        if (auto professor = std::dynamic_pointer_cast<Professor>(usuario)) {
-            resposta["tipo"] = "PROFESSOR";
-            resposta["departamento"] = professor->getDepartamento();
-        } else {
-            resposta["tipo"] = "ADMINISTRADOR";
-        }
-        return crow::response(resposta);
+        return crow::response(serializarUsuario(usuario));
     });
 
+    // ---------------------------------------------
+    // CRUD de usuarios: cada um gerencia a propria conta em /me;
+    // o administrador consulta e remove contas de professores.
+    // ---------------------------------------------
+    CROW_ROUTE(app, "/api/usuarios/me").methods(crow::HTTPMethod::GET)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        return crow::response(serializarUsuario(usuario));
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/me").methods(crow::HTTPMethod::PUT)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+
+        auto body = crow::json::load(req.body);
+        const bool ehProfessor = static_cast<bool>(std::dynamic_pointer_cast<Professor>(usuario));
+        if (!body || body.t() != crow::json::type::Object ||
+            !body.has("nome") || body["nome"].t() != crow::json::type::String ||
+            (ehProfessor && (!body.has("departamento") ||
+                             body["departamento"].t() != crow::json::type::String)) ||
+            (body.has("senha") && body["senha"].t() != crow::json::type::String)) {
+            return respostaErro(400, "VALIDACAO", ehProfessor
+                ? "Campos obrigatorios: nome e departamento; senha e opcional."
+                : "Campo obrigatorio: nome; senha e opcional.");
+        }
+
+        try {
+            const bool atualizado = sistema.atualizarUsuario(
+                usuario->getId(),
+                static_cast<std::string>(body["nome"]),
+                ehProfessor ? static_cast<std::string>(body["departamento"]) : std::string(),
+                body.has("senha") ? static_cast<std::string>(body["senha"]) : std::string());
+            if (!atualizado) return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+
+            const auto trava = sistema.travarBanco();
+            auto atual = sistema.getRepositorioUsuarios().buscar(usuario->getId());
+            if (!atual) return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+            return crow::response(serializarUsuario(atual));
+        } catch (const std::invalid_argument& erro) {
+            return respostaErro(400, "VALIDACAO", erro.what());
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel atualizar a conta.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/me").methods(crow::HTTPMethod::Delete)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        const auto trava = sistema.travarBanco();
+        try {
+            return respostaRemocaoUsuario(sistema.removerUsuario(usuario->getId()));
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover a conta.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios").methods(crow::HTTPMethod::GET)
+    ([&sistema](const crow::request& req) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
+            return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem listar usuarios.");
+        }
+        const auto trava = sistema.travarBanco();
+        try {
+            std::vector<crow::json::wvalue> lista;
+            for (const auto& item : sistema.getRepositorioUsuarios().listarTodos()) {
+                lista.push_back(serializarUsuario(item));
+            }
+            crow::json::wvalue corpo;
+            corpo = std::move(lista);
+            return crow::response(corpo);
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel listar os usuarios.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/<int>").methods(crow::HTTPMethod::GET)
+    ([&sistema](const crow::request& req, int id) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
+            return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem consultar usuarios.");
+        }
+        const auto trava = sistema.travarBanco();
+        try {
+            auto encontrado = sistema.getRepositorioUsuarios().buscar(id);
+            if (!encontrado) return respostaErro(404, "USUARIO_NAO_ENCONTRADO", "Usuario nao encontrado.");
+            return crow::response(serializarUsuario(encontrado));
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel consultar o usuario.");
+        }
+    });
+
+    CROW_ROUTE(app, "/api/usuarios/<int>").methods(crow::HTTPMethod::Delete)
+    ([&sistema](const crow::request& req, int id) {
+        auto usuario = autenticar(req, sistema);
+        if (!usuario) return respostaNaoAutorizada();
+        if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
+            return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem remover usuarios.");
+        }
+        const auto trava = sistema.travarBanco();
+        try {
+            return respostaRemocaoUsuario(sistema.removerUsuario(id));
+        } catch (const std::exception&) {
+            return respostaErro(500, "ERRO_INTERNO", "Nao foi possivel remover o usuario.");
+        }
+    });
+
+    // ---------------------------------------------
+    // GET /api/reservas/minhas - reservas do professor autenticado
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/minhas").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
         if (!usuario) return respostaNaoAutorizada();
         auto professor = std::dynamic_pointer_cast<Professor>(usuario);
         if (!professor) return respostaErro(403, "SEM_PERMISSAO", "Somente professores podem consultar suas reservas.");
+        const auto trava = sistema.travarBanco();
 
         std::vector<std::shared_ptr<Reserva>> minhas;
         for (const auto& reserva : sistema.getRepositorioReservas().listarTodos()) {
@@ -1009,6 +1066,9 @@ int main() {
         return crow::response(corpo);
     });
 
+    // ---------------------------------------------
+    // GET /api/reservas/pendentes - fila de pedidos a decidir (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/pendentes").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -1016,6 +1076,7 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem consultar solicitacoes.");
         }
+        const auto trava = sistema.travarBanco();
 
         std::vector<std::shared_ptr<Reserva>> reservasPendentes;
         for (const auto& reserva : sistema.getRepositorioReservas().listarTodos()) {
@@ -1033,6 +1094,9 @@ int main() {
         return crow::response(corpo);
     });
 
+    // ---------------------------------------------
+    // GET /api/reservas - todas as reservas com filtros e paginacao (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas").methods(crow::HTTPMethod::GET)
     ([&sistema](const crow::request& req) {
         auto usuario = autenticar(req, sistema);
@@ -1040,6 +1104,7 @@ int main() {
         if (!std::dynamic_pointer_cast<Administrador>(usuario)) {
             return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem consultar todas as reservas.");
         }
+        const auto trava = sistema.travarBanco();
 
         const char* status = req.url_params.get("status");
         const char* espacoId = req.url_params.get("espacoId");
@@ -1058,8 +1123,8 @@ int main() {
             if (espacoId) idEspaco = std::stoi(espacoId);
             if (professorId) idProfessor = std::stoi(professorId);
             if (status) statusReservaFromString(status);
-            if (de) diaDaData(de);
-            if (ate) diaDaData(ate);
+            if (de) Datas::diaDaData(de);
+            if (ate) Datas::diaDaData(ate);
         } catch (const std::exception&) {
             return respostaErro(400, "VALIDACAO", "Filtro ou paginacao invalida.");
         }
@@ -1083,6 +1148,7 @@ int main() {
                 (a->getDataInicio() == b->getDataInicio() && a->getId() > b->getId());
         });
 
+        // Mais recentes primeiro; a pagina e um recorte da lista ja filtrada.
         const std::size_t inicio = static_cast<std::size_t>(pagina - 1) * porPagina;
         std::vector<crow::json::wvalue> itens;
         for (std::size_t i = inicio; i < filtradas.size() && i < inicio + porPagina; ++i) {
@@ -1103,6 +1169,7 @@ int main() {
         if (!usuario) return respostaNaoAutorizada();
         auto professor = std::dynamic_pointer_cast<Professor>(usuario);
         if (!professor) return respostaErro(403, "SEM_PERMISSAO", "Somente professores podem solicitar reservas.");
+        const auto trava = sistema.travarBanco();
 
         auto body = crow::json::load(req.body);
         if (!body) {
@@ -1133,14 +1200,15 @@ int main() {
             }
             const std::string dataInicio = static_cast<std::string>(dataInicioJson);
             const std::string dataFim = static_cast<std::string>(dataFimJson);
-            diaDaData(dataInicio);
-            diaDaData(dataFim);
-            if (dataInicio < dataHoje()) {
+            Datas::diaDaData(dataInicio);
+            Datas::diaDaData(dataFim);
+            if (dataInicio < Datas::hoje()) {
                 return respostaErro(400, "VALIDACAO", "A data de inicio nao pode estar no passado.", "dataInicio");
             }
             if (dataFim < dataInicio) return respostaErro(400, "VALIDACAO", "dataFim deve ser igual ou posterior a dataInicio.", "dataFim");
             if (horariosJson.size() == 0) return respostaErro(400, "VALIDACAO", "Informe ao menos um horario.", "horarios");
 
+            // 1. Converte cada horario do JSON em um objeto Horario.
             std::vector<Horario> horarios;
             for (std::size_t i = 0; i < horariosJson.size(); ++i) {
                 const auto& horarioJson = horariosJson[i];
@@ -1161,6 +1229,7 @@ int main() {
                     static_cast<int>(inicio), static_cast<int>(fim));
             }
 
+            // 2. O proprio pedido nao pode ter horarios sobrepostos.
             for (std::size_t i = 0; i < horarios.size(); ++i) {
                 for (std::size_t j = i + 1; j < horarios.size(); ++j) {
                     if (horarios[i].getDiaSemana() == horarios[j].getDiaSemana() &&
@@ -1170,19 +1239,21 @@ int main() {
                 }
             }
 
+            // 3. Cada dia da semana pedido precisa ocorrer no periodo; basta olhar a primeira semana.
             std::vector<bool> diaOcorreu(horarios.size(), false);
             std::string dataVerificada = dataInicio;
             for (std::size_t diaOffset = 0; diaOffset < 7 && dataVerificada <= dataFim; ++diaOffset) {
-                const auto dia = diaDaData(dataVerificada);
+                const auto dia = Datas::diaDaData(dataVerificada);
                 for (std::size_t i = 0; i < horarios.size(); ++i) {
                     if (horarios[i].getDiaSemana() == dia) diaOcorreu[i] = true;
                 }
-                dataVerificada = proximaData(dataVerificada);
+                dataVerificada = Datas::proximaData(dataVerificada);
             }
             if (std::find(diaOcorreu.begin(), diaOcorreu.end(), false) != diaOcorreu.end()) {
                 return respostaErro(400, "VALIDACAO", "Nao ha ocorrencia de um dos dias no periodo informado.", "horarios");
             }
 
+            // 4. O espaco precisa existir e estar em uso.
             espaco = sistema.getRepositorioEspacos().buscar(static_cast<int>(idEspaco));
             if (!espaco) return respostaErro(404, "ESPACO_NAO_ENCONTRADO", "Espaco nao encontrado.");
             if (espaco->isEmManutencao()) {
@@ -1194,8 +1265,9 @@ int main() {
         }
 
         try {
+            // 5. O sistema confere conflitos com outras reservas e grava como PENDENTE.
             std::vector<ConflitoReserva> conflitos;
-            reserva->setCriadaEm(dataHoraUtc());
+            reserva->setCriadaEm(Datas::agoraUtc());
             if (!sistema.processarNovaReserva(reserva, &conflitos)) {
                 if (!conflitos.empty()) return respostaConflitos(conflitos);
                 return respostaErro(400, "VALIDACAO", "A reserva nao e valida para o periodo informado.");
@@ -1204,14 +1276,11 @@ int main() {
             return respostaErro(500, "ERRO_INTERNO", erro.what());
         }
 
-        crow::json::wvalue resposta;
-        resposta["id"] = reserva->getId();
-        resposta["status"] = toString(reserva->getStatus());
-        return crow::response(201, resposta);
+        return crow::response(201, serializarReserva(reserva));
     });
 
     // ---------------------------------------------
-    // POST /api/reservas/:id/aprovar
+    // POST /api/reservas/:id/aprovar (admin)
     // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/<int>/aprovar").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req, int idReserva) {
@@ -1219,6 +1288,7 @@ int main() {
         if (!usuario) return respostaNaoAutorizada();
         auto administrador = std::dynamic_pointer_cast<Administrador>(usuario);
         if (!administrador) return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem aprovar reservas.");
+        const auto trava = sistema.travarBanco();
         try {
             if (!administrador->aprovarReserva(sistema, idReserva)) {
                 return respostaErro(409, "STATUS_INVALIDO", "A reserva nao existe ou nao esta pendente.");
@@ -1229,12 +1299,16 @@ int main() {
         return crow::response(204);
     });
 
+    // ---------------------------------------------
+    // POST /api/reservas/:id/rejeitar - motivo opcional (admin)
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/<int>/rejeitar").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req, int idReserva) {
         auto usuario = autenticar(req, sistema);
         if (!usuario) return respostaNaoAutorizada();
         auto administrador = std::dynamic_pointer_cast<Administrador>(usuario);
         if (!administrador) return respostaErro(403, "SEM_PERMISSAO", "Somente administradores podem rejeitar reservas.");
+        const auto trava = sistema.travarBanco();
         try {
             const auto motivo = lerMotivoOpcional(req);
             if (!administrador->rejeitarReserva(sistema, idReserva, motivo)) {
@@ -1248,12 +1322,16 @@ int main() {
         return crow::response(204);
     });
 
+    // ---------------------------------------------
+    // POST /api/reservas/:id/cancelar - professor cancela a propria reserva
+    // ---------------------------------------------
     CROW_ROUTE(app, "/api/reservas/<int>/cancelar").methods(crow::HTTPMethod::POST)
     ([&sistema](const crow::request& req, int idReserva) {
         auto usuario = autenticar(req, sistema);
         if (!usuario) return respostaNaoAutorizada();
         auto professor = std::dynamic_pointer_cast<Professor>(usuario);
         if (!professor) return respostaErro(403, "SEM_PERMISSAO", "Somente professores podem cancelar reservas.");
+        const auto trava = sistema.travarBanco();
         try {
             const auto motivo = lerMotivoOpcional(req);
             if (!professor->cancelarReserva(sistema, idReserva, motivo)) {
@@ -1272,6 +1350,8 @@ int main() {
         return crow::response(204);
     });
 
+    // Escuta so em localhost; o Vite encaminha /api do frontend para ca.
+    // multithreaded: requisicoes em paralelo, por isso a trava do banco.
     app.bindaddr("127.0.0.1").port(18080).multithreaded().run();
 
     sqlite3_close(catalogoDb);

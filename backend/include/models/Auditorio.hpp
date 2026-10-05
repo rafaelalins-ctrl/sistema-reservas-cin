@@ -14,6 +14,7 @@ public:
               bool requerRetiradaChave, bool emManutencao,
               bool equipamentoSom, bool cabineTraducao);
 
+    // override: implementacoes dos metodos virtuais puros de Espaco.
     std::string obterDescricaoDetalhada() const override;
     std::string tipo() const override { return "AUDITORIO"; }
 

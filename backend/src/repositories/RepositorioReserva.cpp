@@ -9,6 +9,7 @@ std::string textoColuna(sqlite3_stmt* stmt, int coluna) {
     return valor ? reinterpret_cast<const char*>(valor) : "";
 }
 
+// Executa SQL sem parametros (BEGIN/COMMIT); contexto prefixa a mensagem de erro.
 void executarSql(sqlite3* db, const char* sql, const char* contexto) {
     char* erro = nullptr;
     if (sqlite3_exec(db, sql, nullptr, nullptr, &erro) != SQLITE_OK) {
@@ -18,6 +19,8 @@ void executarSql(sqlite3* db, const char* sql, const char* contexto) {
     }
 }
 
+// Grava os horarios semanais reaproveitando o mesmo statement preparado.
+// Deve rodar dentro da transacao de quem chama.
 void inserirHorarios(sqlite3* db, int idReserva, const std::vector<Horario>& horarios) {
     const char* sql =
         "INSERT INTO reserva_horarios (id_reserva, dia_semana, hora_inicio_min, hora_fim_min) "
@@ -53,6 +56,7 @@ void RepositorioReserva::salvar(std::shared_ptr<Reserva> obj) {
            "INSERT INTO reservas (data_inicio, data_fim, status, id_professor, id_espaco, criada_em, motivo) "
            "VALUES (?, ?, ?, ?, ?, ?, ?);";
 
+    // IMMEDIATE reserva a escrita ja no inicio; se algo falhar, o catch desfaz tudo.
     executarSql(db, "BEGIN IMMEDIATE TRANSACTION;", "Erro ao iniciar transacao de reserva: ");
     sqlite3_stmt* stmt = nullptr;
     try {
@@ -191,6 +195,8 @@ void RepositorioReserva::atualizar(std::shared_ptr<Reserva> obj) {
     sqlite3_finalize(stmt);
 }
 
+// A condicao "AND status = PENDENTE" fica no proprio UPDATE: se dois admins decidirem
+// ao mesmo tempo, so um altera a linha. sqlite3_changes diz se houve alteracao.
 bool RepositorioReserva::atualizarStatusPendente(int id, StatusReserva status, const std::string& motivo) {
     if (status != StatusReserva::APROVADA && status != StatusReserva::REJEITADA) {
         return false;
@@ -218,6 +224,7 @@ bool RepositorioReserva::atualizarStatusPendente(int id, StatusReserva status, c
     return atualizado;
 }
 
+// Mesma ideia: dono, status e data sao conferidos no WHERE, de forma atomica.
 bool RepositorioReserva::cancelarReserva(int id, int idProfessor, const std::string& hoje,
                                           const std::string& motivo) {
     const char* sql =
@@ -284,6 +291,8 @@ std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarTodos() {
     return resultado;
 }
 
+// Datas ISO (AAAA-MM-DD) comparadas como texto ficam na ordem cronologica.
+// idReservaIgnorada (se > 0) deixa uma reserva de fora da consulta.
 std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarPorEspacoEData(
         int idEspaco, const std::string& data, int idReservaIgnorada) {
         const char* sql = idReservaIgnorada > 0
@@ -313,28 +322,4 @@ std::vector<std::shared_ptr<Reserva>> RepositorioReserva::listarPorEspacoEData(
     }
     sqlite3_finalize(stmt);
     return resultado;
-}
-
-void RepositorioReserva::atualizarHorarios(int idReserva, const std::vector<Horario>& horarios) {
-    executarSql(db, "BEGIN IMMEDIATE TRANSACTION;", "Erro ao iniciar alteracao de horarios: ");
-    try {
-        sqlite3_stmt* stmt = nullptr;
-        if (sqlite3_prepare_v2(db, "DELETE FROM reserva_horarios WHERE id_reserva = ?;", -1,
-                               &stmt, nullptr) != SQLITE_OK) {
-            throw std::runtime_error(std::string("Erro ao preparar remocao de horarios: ") + sqlite3_errmsg(db));
-        }
-        sqlite3_bind_int(stmt, 1, idReserva);
-        if (sqlite3_step(stmt) != SQLITE_DONE) {
-            const std::string mensagem = sqlite3_errmsg(db);
-            sqlite3_finalize(stmt);
-            throw std::runtime_error("Erro ao remover horarios antigos: " + mensagem);
-        }
-        sqlite3_finalize(stmt);
-
-        inserirHorarios(db, idReserva, horarios);
-        executarSql(db, "COMMIT;", "Erro ao confirmar alteracao de horarios: ");
-    } catch (...) {
-        sqlite3_exec(db, "ROLLBACK;", nullptr, nullptr, nullptr);
-        throw;
-    }
 }

@@ -30,6 +30,9 @@ const POR_CODIGO: Record<CodigoErro, string> = {
   IDENTIFICACAO_DUPLICADA: 'Já existe um espaço com essa identificação.',
   ESPACO_COM_RESERVAS:
     'Este espaço tem reservas vinculadas e não pode ser removido. Considere colocá-lo em manutenção.',
+  USUARIO_NAO_ENCONTRADO: 'Conta não encontrada.',
+  USUARIO_COM_RESERVAS:
+    'Sua conta tem reservas vinculadas e não pode ser excluída, para preservar o histórico.',
 }
 
 const POR_STATUS: Record<number, string> = {

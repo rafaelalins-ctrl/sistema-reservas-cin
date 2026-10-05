@@ -7,10 +7,12 @@ import { cn } from '@/lib/utils'
 
 export function Header() {
   const { sessao, sair } = useAuth()
-  const links = sessao
+  // `curto` substitui o rótulo em telas estreitas, para o cabeçalho caber em uma linha.
+  const links: { to: string; label: string; curto?: string; end: boolean }[] = sessao
     ? [
         { to: '/', label: 'Início', end: true },
         { to: '/app', label: 'Reservas', end: false },
+        { to: '/conta', label: 'Minha conta', curto: 'Conta', end: true },
       ]
     : [{ to: '/', label: 'Início', end: true }]
 
@@ -27,7 +29,7 @@ export function Header() {
         <div className="flex items-center gap-1">
           <nav aria-label="Principal">
             <ul className="flex items-center gap-1">
-              {links.map(({ to, label, end }) => (
+              {links.map(({ to, label, curto, end }) => (
                 <li key={to}>
                   <NavLink
                     to={to}
@@ -39,7 +41,14 @@ export function Header() {
                       )
                     }
                   >
-                    {label}
+                    {curto ? (
+                      <>
+                        <span className="sm:hidden">{curto}</span>
+                        <span className="hidden sm:inline">{label}</span>
+                      </>
+                    ) : (
+                      label
+                    )}
                   </NavLink>
                 </li>
               ))}

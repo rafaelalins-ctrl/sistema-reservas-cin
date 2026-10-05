@@ -1,9 +1,6 @@
 {
   "compilerOptions": {
-    "paths": {
-      "@/lib/api": ["./src/lib/api/index.ts"],
-      "@/*": ["./src/*"]
-    },
+    "paths": { "@/*": ["./src/*"] },
 
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "es2023",

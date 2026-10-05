@@ -1,8 +1,8 @@
 // Ponto único de acesso à API para as páginas. Cada recurso usa a implementação real ou a
 // simulada conforme VITE_API_SIMULADA (docs/prd.md, seção 6.2):
-//   VITE_API_SIMULADA=todos               tudo simulado (padrão em `npm run dev`)
+//   VITE_API_SIMULADA=todos               tudo simulado
 //   VITE_API_SIMULADA=espacos,reservas    autenticação real, o resto simulado
-//   VITE_API_SIMULADA=                    tudo real (padrão em desenvolvimento e produção)
+//   VITE_API_SIMULADA=                    tudo real (o mesmo que omitir a variável)
 import { ApiError } from '@/lib/api/erros'
 import { authReal } from '@/lib/api/real/auth'
 import { espacosReal } from '@/lib/api/real/espacos'
@@ -16,8 +16,7 @@ export { ApiError, ehErro, mensagemAmigavel } from '@/lib/api/erros'
 
 type Recurso = keyof Api
 
-const configuracao: string =
-  import.meta.env.VITE_API_SIMULADA ?? ''
+const configuracao: string = import.meta.env.VITE_API_SIMULADA ?? ''
 const simulados = new Set(
   configuracao
     .split(',')
