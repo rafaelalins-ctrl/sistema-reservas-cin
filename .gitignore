@@ -3,6 +3,7 @@ build/
 backend/build/
 out/
 cmake-build-*/
+backend/build-*/
 
 # Compiled
 *.o
