@@ -89,7 +89,7 @@ do executável aberto enquanto usar o frontend; o Vite encaminha `/api` para `12
 mkdir -p backend/build && cd backend/build
 cmake ..
 cmake --build . -j
-./sistema_reservas
+./sistema_reservas.exe
 ```
 
 ### Teste rápido das classes de domínio (MinGW)
@@ -124,7 +124,7 @@ administrador. Não há senha administrativa padrão.
 export CIN_ADMIN_EMAIL="admin@cin.ufpe.br"
 export CIN_ADMIN_SENHA="sua_senha_aqui"
 export CIN_ADMIN_NOME="Administrador" # Opcional
-./sistema_reservas
+./sistema_reservas.exe
 ```
 
 
