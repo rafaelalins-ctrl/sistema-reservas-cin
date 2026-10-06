@@ -136,6 +136,26 @@ $env:CIN_ADMIN_NOME = "Administrador" # Opcional
 .\sistema_reservas.exe
 ```
 
+## 💻 Como Rodar o Frontend (React + Vite)
+
+O frontend é desenvolvido em **React** com **Vite** e precisa do **Node.js** (versão 18 ou superior) instalado na máquina.
+
+---
+
+### 1. Entrar na pasta do frontend
+Abra o terminal na raiz do projeto e navegue até a pasta do frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+O Vite iniciará o servidor local (geralmente em http://localhost:5173).
+
+Acesse a URL indicada no terminal pelo navegador.
+
+⚠️ Importante: Para que o login, as listagens de espaços e as reservas funcionem, o backend C++ precisa estar rodando em paralelo na porta 18080. O Vite já está configurado para encaminhar as chamadas de /api direto para 127.0.0.1:18080.
+
+
 ## Endpoints
 
 | Método | Rota | Descrição |
