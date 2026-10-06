@@ -1,6 +1,6 @@
 # Sistema de Reservas - Centro de Informática
 
-**Página do projeto:** <https://rafaelalins-ctrl.github.io/sistema-reservas-cin/> (publicada a partir de [`site/`](site/)).
+**Página do projeto:** <https://rafaelalins-ctrl.github.io/sistema-reservas-cin/>.
 
 Backend em **C++** (Crow + SQLite) para o sistema de reserva de salas, laboratórios e
 auditórios do CIn, seguindo o padrão **Repository** e um modelo de domínio polimórfico
