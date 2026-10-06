@@ -1,5 +1,18 @@
 # Sistema de Reservas - Centro de Informática
 
+---
+
+## 👥 Equipe do Projeto
+
+Projeto prático desenvolvido no âmbito da disciplina **CIN0135 — Estruturas de Dados Orientadas a Objetos**, ministrada pelo **Prof. Francisco Simões** no Centro de Informática da Universidade Federal de Pernambuco (**CIn-UFPE**).
+
+| Membro | Responsabilidades Principais |
+| :--- | :--- |
+| **Rafaela Lins** | Desenvolvimento Backend em C++, modelagem do banco SQLite e documentação. |
+| **Rafael Samico** | Desenvolvimento Frontend em React e integração de telas com a API REST. |
+| **Valquiria Silva** | Estruturas de Dados Orientadas a Objetos e regras de disponibilidade. |
+| **Alanny Vitória** | Elaboração do relatório técnico e produção do vídeo de demonstração. |
+
 **Página do projeto:** <https://rafaelalins-ctrl.github.io/sistema-reservas-cin/>.
 
 Backend em **C++** (Crow + SQLite) para o sistema de reserva de salas, laboratórios e
@@ -104,6 +117,24 @@ ausentes do catálogo recebem valores de demonstração, descritos em
 Para provisionar o primeiro administrador, defina `CIN_ADMIN_EMAIL` e `CIN_ADMIN_SENHA` antes de
 iniciar o servidor; `CIN_ADMIN_NOME` é opcional. A conta só é criada se ainda não houver um
 administrador. Não há senha administrativa padrão.
+
+## Ubuntu/Debian
+
+```bash
+export CIN_ADMIN_EMAIL="admin@cin.ufpe.br"
+export CIN_ADMIN_SENHA="sua_senha_aqui"
+export CIN_ADMIN_NOME="Administrador" # Opcional
+./sistema_reservas
+```
+
+
+## Windows 
+```powershell
+$env:CIN_ADMIN_EMAIL = "admin@cin.ufpe.br"
+$env:CIN_ADMIN_SENHA = "sua_senha_aqui"
+$env:CIN_ADMIN_NOME = "Administrador" # Opcional
+.\sistema_reservas.exe
+```
 
 ## Endpoints
 
