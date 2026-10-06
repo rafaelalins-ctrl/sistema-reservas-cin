@@ -275,9 +275,9 @@ classDiagram
         #string email
         #string senhaHash
         +fazerLogin(email, senha) bool
-        +gerarHashSenha(senha) string$
-        +validarPermissaoReserva(Espaco) bool*
-        +tipo() string*
+        +gerarHashSenha(senha) string
+        +validarPermissaoReserva(Espaco) bool
+        +tipo() string
     }
     class Professor {
         -string departamento
@@ -302,8 +302,8 @@ classDiagram
         #int capacidade
         #BlocoCIn bloco
         #bool emManutencao
-        +obterDescricaoDetalhada() string*
-        +tipo() string*
+        +obterDescricaoDetalhada() string
+        +tipo() string
     }
     class SalaAula {
         -TipoQuadro tipoQuadro
@@ -326,9 +326,9 @@ classDiagram
         -string dataInicio
         -string dataFim
         -StatusReserva status
-        +aprovar()
-        +rejeitar()
-        +cancelar()
+        +aprovar() void
+        +rejeitar() void
+        +cancelar() void
     }
     class Horario {
         -DiaSemana diaSemana
@@ -336,24 +336,24 @@ classDiagram
         -int horaFimMin
         +conflitaCom(Horario) bool
     }
-    Reserva --> "1" Professor : solicitante
-    Reserva --> "1" Espaco : espaco
-    Reserva *-- "1..*" Horario : horarios
+    Reserva --> Professor : solicitante
+    Reserva --> Espaco : espaco
+    Reserva *-- Horario : horarios
 
-    class IRepositorio~T~ {
+    class IRepositorio {
         <<interface>>
-        +salvar(T)*
-        +buscar(id) T*
-        +atualizar(T)*
-        +remover(id)*
-        +listarTodos() vector~T~*
+        +salvar(T) bool
+        +buscar(id) T
+        +atualizar(T) bool
+        +remover(id) bool
+        +listarTodos() vector
     }
     class RepositorioEspaco
     class RepositorioReserva
     class RepositorioUsuario
-    IRepositorio <|.. RepositorioEspaco : T = Espaco
-    IRepositorio <|.. RepositorioReserva : T = Reserva
-    IRepositorio <|.. RepositorioUsuario : T = Usuario
+    IRepositorio <|.. RepositorioEspaco : T=Espaco
+    IRepositorio <|.. RepositorioReserva : T=Reserva
+    IRepositorio <|.. RepositorioUsuario : T=Usuario
     RepositorioReserva --> RepositorioEspaco : usa
 
     class SistemaDeReservas {
@@ -362,7 +362,7 @@ classDiagram
         +autenticarUsuario(email, senha) Usuario
         +aprovarReserva(id) bool
         +cancelarReserva(id, idProfessor) bool
-        +atualizarUsuario(...) bool
+        +atualizarUsuario(dados) bool
         +removerUsuario(id) ResultadoRemocaoUsuario
     }
     SistemaDeReservas *-- RepositorioEspaco
