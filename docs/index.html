@@ -269,7 +269,7 @@ classDiagram
     direction TB
 
     class Usuario {
-        <<abstract>>
+        &lt;&lt;abstract&gt;&gt;
         #int id
         #string nome
         #string email
@@ -296,7 +296,7 @@ classDiagram
     Usuario <|-- Administrador
 
     class Espaco {
-        <<abstract>>
+        &lt;&lt;abstract&gt;&gt;
         #int id
         #string identificacao
         #int capacidade
@@ -341,7 +341,7 @@ classDiagram
     Reserva *-- Horario : horarios
 
     class IRepositorio {
-        <<interface>>
+        &lt;&lt;interface&gt;&gt;
         +salvar(T) bool
         +buscar(id) T
         +atualizar(T) bool
